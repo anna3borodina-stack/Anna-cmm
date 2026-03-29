@@ -1,0 +1,1916 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Генератор постов для SMM — готовый контент под любую нишу</title>
+  <!--
+    ═══════════════════════════════════════════════════════════════════════════
+    СЕРВИС: одностраничный мини-лендинг + генератор постов для SMM-специалистов.
+    КАК ПОЛЬЗОВАТЬСЯ: откройте файл в браузере → заполните форму в блоке «Генератор»
+    → нажмите «Сгенерировать пост» → переключайте вкладки результата, копируйте или скачивайте.
+
+    ГДЕ МЕНЯТЬ СТИЛИ: блок <style> ниже — переменные :root и [data-theme="dark"].
+
+    ГДЕ МЕНЯТЬ ШАБЛОНЫ ГЕНЕРАЦИИ: в <script> объекты BLOCK_ORDERS, POST_TYPE_TEMPLATES,
+    TONE_MODIFIERS, PLATFORM_HINTS, buildPostFromTemplates(), applyModifiers().
+
+    ГДЕ МЕНЯТЬ СПИСКИ: константы NICHE_LIST, NICHE_PRESETS, POST_TYPE_OPTIONS, TONE_OPTIONS,
+    GOAL_CHIPS, FORMAT_OPTIONS, QUICK_STRUCTURES, HEADLINE_POOL, CTA_POOL, STORIES_POOL,
+    HASHTAG_BASE, BANNER_PHRASES, REELS_IDEAS — все в начале скрипта, с комментариями.
+    ═══════════════════════════════════════════════════════════════════════════
+  -->
+  <style>
+    :root {
+      --bg: #f7f4ef;
+      --bg-card: #fffcf8;
+      --text: #2c2a28;
+      --text-muted: #6b6560;
+      --accent: #c4a574;
+      --accent-soft: #e8dcc8;
+      --border: #e6dfd4;
+      --shadow: 0 18px 48px rgba(44, 42, 40, 0.08);
+      --radius: 18px;
+      --radius-sm: 12px;
+      --font: "Segoe UI", system-ui, -apple-system, sans-serif;
+      --transition: 0.28s ease;
+    }
+    [data-theme="dark"] {
+      --bg: #1a1918;
+      --bg-card: #242220;
+      --text: #f2ebe3;
+      --text-muted: #a39a90;
+      --accent: #d4b896;
+      --accent-soft: #3d3630;
+      --border: #3a3530;
+      --shadow: 0 20px 56px rgba(0, 0, 0, 0.45);
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .wrap { max-width: 1180px; margin: 0 auto; padding: 0 22px; }
+    @media (max-width: 640px) { .wrap { padding: 0 16px; } }
+
+    /* Шапка */
+    .topbar {
+      position: sticky; top: 0; z-index: 100;
+      background: color-mix(in srgb, var(--bg) 92%, transparent);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .topbar-inner {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 0; gap: 16px; flex-wrap: wrap;
+    }
+    .logo { font-weight: 700; font-size: 1.05rem; letter-spacing: -0.02em; }
+    .theme-btn {
+      border: 1px solid var(--border); background: var(--bg-card);
+      color: var(--text); padding: 10px 18px; border-radius: 999px;
+      cursor: pointer; font-size: 0.9rem; transition: var(--transition);
+    }
+    .theme-btn:hover { border-color: var(--accent); box-shadow: var(--shadow); }
+
+    /* Типографика и кнопки */
+    h1, h2, h3 { line-height: 1.2; letter-spacing: -0.02em; margin: 0 0 0.5em; }
+    h1 { font-size: clamp(1.85rem, 4vw, 2.65rem); }
+    h2 { font-size: clamp(1.45rem, 3vw, 2rem); }
+    .lead { font-size: 1.08rem; color: var(--text-muted); max-width: 520px; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 14px 26px; border-radius: 999px; border: none; cursor: pointer;
+      font-weight: 600; font-size: 0.95rem; transition: var(--transition);
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #c4a574, #a88958);
+      color: #fff; box-shadow: 0 8px 24px rgba(196, 165, 116, 0.35);
+    }
+    .btn-primary:hover { transform: translateY(-2px); filter: brightness(1.05); }
+    .btn-ghost {
+      background: var(--bg-card); color: var(--text); border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { border-color: var(--accent); }
+    .btn-sm { padding: 10px 16px; font-size: 0.85rem; }
+
+    /* Карточки и сетки */
+    .card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow);
+      transition: var(--transition);
+    }
+    .card:hover { transform: translateY(-3px); }
+    .grid-2 {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center;
+    }
+    @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; gap: 32px; } }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+    @media (max-width: 900px) { .grid-3 { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 560px) { .grid-3 { grid-template-columns: 1fr; } }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+    @media (max-width: 1000px) { .grid-4 { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 480px) { .grid-4 { grid-template-columns: 1fr; } }
+
+    /* Hero */
+    .hero { padding: 56px 0 72px; }
+    .hero-badges { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+    .badge {
+      padding: 8px 14px; border-radius: 999px; background: var(--accent-soft);
+      color: var(--text); font-size: 0.82rem; font-weight: 500;
+    }
+    .demo-card {
+      border-radius: var(--radius); overflow: hidden;
+      border: 1px solid var(--border); background: var(--bg-card);
+      box-shadow: var(--shadow);
+    }
+    .demo-head {
+      padding: 14px 18px; border-bottom: 1px solid var(--border);
+      font-size: 0.78rem; color: var(--text-muted); display: flex; justify-content: space-between;
+    }
+    .demo-body { padding: 22px; font-size: 0.95rem; }
+    .demo-title { font-weight: 700; margin-bottom: 10px; font-size: 1.1rem; }
+    .demo-text { color: var(--text-muted); margin-bottom: 14px; white-space: pre-line; }
+    .demo-cta { color: var(--accent); font-weight: 600; }
+
+    /* Секции */
+    section { padding: 56px 0; }
+    section.alt { background: color-mix(in srgb, var(--accent-soft) 35%, var(--bg)); }
+    .section-head { text-align: center; max-width: 640px; margin: 0 auto 40px; }
+    .section-head p { color: var(--text-muted); margin: 0; }
+
+    /* Чипы и быстрые кнопки */
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip {
+      padding: 10px 16px; border-radius: 999px; border: 1px solid var(--border);
+      background: var(--bg-card); cursor: pointer; font-size: 0.85rem;
+      transition: var(--transition);
+    }
+    .chip:hover, .chip.active {
+      border-color: var(--accent); background: var(--accent-soft);
+    }
+
+    /* Генератор — главный блок */
+    #generator {
+      scroll-margin-top: 80px;
+      border: 2px solid color-mix(in srgb, var(--accent) 45%, var(--border));
+      border-radius: calc(var(--radius) + 6px);
+      padding: 32px;
+      background: linear-gradient(160deg, var(--bg-card), color-mix(in srgb, var(--accent-soft) 20%, var(--bg-card)));
+    }
+    @media (max-width: 640px) { #generator { padding: 20px; } }
+    .form-grid {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px 22px;
+    }
+    @media (max-width: 800px) { .form-grid { grid-template-columns: 1fr; } }
+    .field label {
+      display: block; font-weight: 600; font-size: 0.88rem; margin-bottom: 8px;
+    }
+    .field input, .field select, .field textarea {
+      width: 100%; padding: 12px 14px; border-radius: var(--radius-sm);
+      border: 1px solid var(--border); background: var(--bg); color: var(--text);
+      font-family: inherit; font-size: 0.95rem; transition: var(--transition);
+    }
+    .field textarea { min-height: 88px; resize: vertical; }
+    .field input:focus, .field select:focus, .field textarea:focus {
+      outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+    .field-full { grid-column: 1 / -1; }
+    .checks {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px 18px;
+    }
+    @media (max-width: 700px) { .checks { grid-template-columns: 1fr; } }
+    .check {
+      display: flex; align-items: flex-start; gap: 10px; font-size: 0.9rem; cursor: pointer;
+    }
+    .check input { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--accent); }
+
+    .toggle-row {
+      display: flex; flex-wrap: wrap; gap: 12px 20px; margin-top: 8px;
+    }
+    .toggle {
+      display: inline-flex; align-items: center; gap: 8px; font-size: 0.9rem; cursor: pointer;
+    }
+    .toggle input { accent-color: var(--accent); width: 18px; height: 18px; }
+
+    .actions {
+      display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px;
+    }
+    .actions .btn { flex: 1 1 auto; min-width: 140px; }
+
+    /* Результат */
+    .result-wrap { margin-top: 36px; display: none; }
+    .result-wrap.visible { display: block; animation: fadeUp 0.5s ease; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .reveal { animation: fadeUp 0.6s ease both; }
+    .tabs {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px;
+    }
+    .tab {
+      padding: 10px 16px; border-radius: 999px; border: 1px solid var(--border);
+      background: var(--bg); cursor: pointer; font-size: 0.82rem; transition: var(--transition);
+    }
+    .tab.active { background: var(--accent-soft); border-color: var(--accent); font-weight: 600; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+    .out-block {
+      margin-bottom: 18px; padding: 16px; border-radius: var(--radius-sm);
+      background: var(--bg); border: 1px solid var(--border);
+    }
+    .out-block h4 { margin: 0 0 8px; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .out-block pre, .out-block .body {
+      margin: 0; white-space: pre-wrap; word-break: break-word; font-family: inherit; font-size: 0.95rem;
+    }
+
+    /* Отзывы */
+    .reviews { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    @media (max-width: 900px) { .reviews { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 500px) { .reviews { grid-template-columns: 1fr; } }
+    .review { text-align: center; padding: 20px; }
+    .review strong { display: block; margin-bottom: 8px; color: var(--accent); }
+
+    /* Футер */
+    footer {
+      padding: 40px 0 28px; border-top: 1px solid var(--border);
+      color: var(--text-muted); font-size: 0.9rem;
+    }
+    .footer-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; align-items: start; }
+    @media (max-width: 700px) { .footer-grid { grid-template-columns: 1fr; } }
+
+    /* Тосты */
+    #toast-container {
+      position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+      display: flex; flex-direction: column; gap: 10px; pointer-events: none;
+    }
+    .toast {
+      background: var(--text); color: var(--bg-card); padding: 14px 20px;
+      border-radius: var(--radius-sm); box-shadow: var(--shadow);
+      font-size: 0.9rem; animation: fadeUp 0.35s ease; pointer-events: auto;
+    }
+    [data-theme="dark"] .toast { background: var(--accent-soft); color: var(--text); }
+
+    .niche-bar-title { font-size: 0.85rem; font-weight: 600; margin: 14px 0 8px; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <div class="logo">PostCraft · генератор для SMM</div>
+      <button type="button" class="theme-btn" id="themeToggle" aria-label="Сменить тему">Тема: светлая</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero wrap">
+      <div class="grid-2">
+        <div class="reveal">
+          <h1>Готовые посты для любой ниши за пару минут</h1>
+          <p class="lead">Мини-сервис для SMM-специалистов, экспертов, брендов, магазинов и услуг</p>
+          <div style="margin-top:24px;display:flex;flex-wrap:wrap;gap:12px;">
+            <a href="#generator" class="btn btn-primary">Сгенерировать пост</a>
+            <button type="button" class="btn btn-ghost" id="heroDemoBtn">Посмотреть демо</button>
+          </div>
+          <div class="hero-badges">
+            <span class="badge">под любую нишу</span>
+            <span class="badge">быстро</span>
+            <span class="badge">удобно</span>
+            <span class="badge">готово к копированию</span>
+          </div>
+        </div>
+        <div class="demo-card reveal" style="animation-delay:0.1s">
+          <div class="demo-head"><span>Пример результата</span><span>Instagram · продающий</span></div>
+          <div class="demo-body">
+            <div class="demo-title">Когда кожа «устала», а вам нужно сияние к выходным</div>
+            <div class="demo-text">Знакомо: утром тон ложится пятнами, к вечеру блеск там, где не просили. Мы собрали мягкий уход, который не перегружает барьер — и даёт ровный, «дорогой» финиш без маски.
+
+Пара капель — и текстура как после салона, только дома.</div>
+            <div class="demo-cta">Напишите «уход» в директ — пришлём подборку под ваш тип кожи ✨</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="alt">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Для кого</h2>
+          <p>Один инструмент — разные задачи: от эксперта до магазина</p>
+        </div>
+        <div class="grid-3">
+          <div class="card"><h3>SMM-специалист</h3><p style="color:var(--text-muted);margin:0;font-size:0.95rem;">Черновики, варианты под клиента, быстрые идеи без пустого экрана.</p></div>
+          <div class="card"><h3>Эксперт</h3><p style="color:var(--text-muted);margin:0;font-size:0.95rem;">Спокойная экспертная подача, сторис-цепочки и понятные объяснения.</p></div>
+          <div class="card"><h3>Бренд</h3><p style="color:var(--text-muted);margin:0;font-size:0.95rem;">Тон бренда, офферы, знакомство и доверие — в одном потоке.</p></div>
+          <div class="card"><h3>Магазин</h3><p style="color:var(--text-muted);margin:0;font-size:0.95rem;">Карточки смысла, акции, «почему стоит купить сейчас».</p></div>
+          <div class="card"><h3>Услуги</h3><p style="color:var(--text-muted);margin:0;font-size:0.95rem;">Заявки в сообщения, записи, понятная выгода без крика.</p></div>
+          <div class="card"><h3>Личный блог</h3><p style="color:var(--text-muted);margin:0;font-size:0.95rem;">Живой голос, истории, вовлечение и мягкие призывы.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Какие посты можно создавать</h2>
+          <p>Выберите тип в форме — логика и структура подстроятся под задачу</p>
+        </div>
+        <div class="grid-4">
+          <div class="card" style="padding:16px;"><strong>Продающий</strong></div>
+          <div class="card" style="padding:16px;"><strong>Экспертный</strong></div>
+          <div class="card" style="padding:16px;"><strong>Вовлекающий</strong></div>
+          <div class="card" style="padding:16px;"><strong>Прогрев</strong></div>
+          <div class="card" style="padding:16px;"><strong>Анонс акции</strong></div>
+          <div class="card" style="padding:16px;"><strong>Знакомство с брендом</strong></div>
+          <div class="card" style="padding:16px;"><strong>Разбор боли</strong></div>
+          <div class="card" style="padding:16px;"><strong>Кейс / отзыв</strong></div>
+          <div class="card" style="padding:16px;"><strong>Сторис-серия</strong></div>
+          <div class="card" style="padding:16px;"><strong>Telegram</strong></div>
+          <div class="card" style="padding:16px;"><strong>VK</strong></div>
+          <div class="card" style="padding:16px;"><strong>Instagram</strong></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="alt">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Почему это удобно</h2>
+        </div>
+        <div class="grid-3">
+          <div class="card"><p style="margin:0;">Экономит время SMM-специалиста: меньше рутины — больше стратегии.</p></div>
+          <div class="card"><p style="margin:0;">Быстрые варианты для согласований с клиентом — не одна скучная версия.</p></div>
+          <div class="card"><p style="margin:0;">Подстраивается под нишу: от психологии до маркетплейсов.</p></div>
+          <div class="card"><p style="margin:0;">Снимает страх чистого листа: есть каркас, осталось отполировать.</p></div>
+          <div class="card"><p style="margin:0;">Ускоряет контент-план: заголовки, CTA, сторис и хэштеги — сразу пакетом.</p></div>
+          <div class="card"><p style="margin:0;">Универсально: бренды, эксперты, магазины, услуги — одна логика.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="niches-section">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Примеры ниш</h2>
+          <p>Нажмите нишу — форма заполнится примерными данными</p>
+        </div>
+        <div class="chips" id="nicheChips"></div>
+      </div>
+    </section>
+
+    <section class="alt">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Быстрый старт</h2>
+        </div>
+        <div class="chips" style="justify-content:center;">
+          <button type="button" class="chip" data-quick="expert">Пример для эксперта</button>
+          <button type="button" class="chip" data-quick="shop">Пример для магазина</button>
+          <button type="button" class="chip" data-quick="service">Пример для услуг</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap" style="padding-top:24px;">
+      <div id="generator" class="card reveal" style="box-shadow:var(--shadow);">
+        <div class="section-head" style="margin-bottom:28px;">
+          <h2 style="margin-bottom:8px;">Генератор постов</h2>
+          <p>Заполните поля — система соберёт смысловые блоки и даст несколько готовых вариантов</p>
+        </div>
+
+        <p class="niche-bar-title">Быстрый выбор ниши (внутри генератора)</p>
+        <div class="chips" id="nicheChipsGen"></div>
+
+        <p class="niche-bar-title">Быстрые цели</p>
+        <div class="chips" id="goalChips"></div>
+
+        <p class="niche-bar-title">Быстрые структуры</p>
+        <div class="chips" id="structureChips"></div>
+
+        <p class="niche-bar-title">Переключатели стиля</p>
+        <div class="toggle-row">
+          <label class="toggle"><input type="checkbox" id="tog_emoji" checked /> использовать эмодзи</label>
+          <label class="toggle"><input type="checkbox" id="tog_premium" /> писать более премиально</label>
+          <label class="toggle"><input type="checkbox" id="tog_human" /> проще и человечнее</label>
+          <label class="toggle"><input type="checkbox" id="tog_offer" /> сильный оффер</label>
+          <label class="toggle"><input type="checkbox" id="tog_alive" /> текст живее</label>
+          <label class="toggle"><input type="checkbox" id="tog_soft" /> текст мягче</label>
+        </div>
+
+        <form id="postForm" style="margin-top:24px;">
+          <div class="form-grid">
+            <div class="field"><label for="f_niche">Ниша</label><input type="text" id="f_niche" name="niche" placeholder="Например: косметология" /></div>
+            <div class="field"><label for="f_product">Что продаём / продвигаем</label><input type="text" id="f_product" name="product" /></div>
+            <div class="field field-full"><label for="f_audience">Целевая аудитория</label><textarea id="f_audience" name="audience" placeholder="Кто эти люди, чем живут, что для них важно"></textarea></div>
+            <div class="field">
+              <label for="f_platform">Платформа</label>
+              <select id="f_platform" name="platform">
+                <option value="instagram">Instagram</option>
+                <option value="telegram">Telegram</option>
+                <option value="vk">VK</option>
+                <option value="universal">Универсальный</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="f_type">Тип поста</label>
+              <select id="f_type" name="postType"></select>
+            </div>
+            <div class="field">
+              <label for="f_tone">Тон текста</label>
+              <select id="f_tone" name="tone"></select>
+            </div>
+            <div class="field field-full"><label for="f_goal">Цель поста</label><input type="text" id="f_goal" name="goal" placeholder="Заявки, прогрев, знакомство..." /></div>
+            <div class="field field-full"><label for="f_usp">УТП / преимущества</label><textarea id="f_usp" name="usp"></textarea></div>
+            <div class="field field-full"><label for="f_pain">Боли аудитории</label><textarea id="f_pain" name="pain"></textarea></div>
+            <div class="field field-full"><label for="f_cta">Призыв к действию</label><input type="text" id="f_cta" name="cta" placeholder="Напишите в директ, оставьте заявку..." /></div>
+            <div class="field">
+              <label for="f_length">Желаемый объём</label>
+              <select id="f_length" name="length">
+                <option value="short">Короткий</option>
+                <option value="medium" selected>Средний</option>
+                <option value="long">Длинный</option>
+              </select>
+            </div>
+            <div class="field field-full"><label for="f_keywords">Ключевые слова</label><input type="text" id="f_keywords" name="keywords" placeholder="Через запятую" /></div>
+            <div class="field field-full"><label for="f_extra">Дополнительные пожелания</label><textarea id="f_extra" name="extra"></textarea></div>
+            <div class="field field-full">
+              <label for="f_format">Формат текста</label>
+              <select id="f_format" name="format"></select>
+            </div>
+            <div class="field field-full">
+              <label>Дополнительные настройки (чекбоксы)</label>
+              <div class="checks">
+                <label class="check"><input type="checkbox" id="c_emoji" /> добавить эмодзи</label>
+                <label class="check"><input type="checkbox" id="c_noemoji" /> без эмодзи</label>
+                <label class="check"><input type="checkbox" id="c_expensive" /> текст дороже по ощущению</label>
+                <label class="check"><input type="checkbox" id="c_human" /> текст человечнее</label>
+                <label class="check"><input type="checkbox" id="c_benefit" /> больше пользы</label>
+                <label class="check"><input type="checkbox" id="c_offer" /> усилить оффер</label>
+                <label class="check"><input type="checkbox" id="c_softcta" /> мягкий призыв</label>
+                <label class="check"><input type="checkbox" id="c_creative" /> креативнее</label>
+                <label class="check"><input type="checkbox" id="c_sales" /> под продажи</label>
+                <label class="check"><input type="checkbox" id="c_eng" /> под вовлечение</label>
+                <label class="check"><input type="checkbox" id="c_trust" /> под доверие</label>
+              </div>
+            </div>
+          </div>
+        </form>
+
+        <div class="actions">
+          <button type="button" class="btn btn-primary" id="btnGen">Сгенерировать пост</button>
+          <button type="button" class="btn btn-ghost" id="btnClear">Очистить форму</button>
+          <button type="button" class="btn btn-ghost" id="btnSample">Вставить пример</button>
+          <button type="button" class="btn btn-ghost" id="btnCopy">Скопировать текст</button>
+          <button type="button" class="btn btn-ghost" id="btnCopyAll">Скопировать все варианты</button>
+          <button type="button" class="btn btn-ghost" id="btnTxt">Скачать .txt</button>
+          <button type="button" class="btn btn-ghost" id="btnJson">Скачать .json</button>
+          <button type="button" class="btn btn-ghost" id="btnMore2">Ещё 2 варианта</button>
+          <button type="button" class="btn btn-ghost" id="btnShorter">Короче</button>
+          <button type="button" class="btn btn-ghost" id="btnLonger">Длиннее</button>
+          <button type="button" class="btn btn-ghost" id="btnRicher">Дороже по тону</button>
+          <button type="button" class="btn btn-ghost" id="btnSofter">Мягче</button>
+          <button type="button" class="btn btn-ghost" id="btnLivelier">Живее</button>
+          <button type="button" class="btn btn-ghost" id="btnRegen">Создать заново</button>
+        </div>
+
+        <div class="result-wrap card" id="resultWrap" style="margin-top:28px;padding:24px;background:var(--bg);border:1px solid var(--border);">
+          <div class="tabs" id="resultTabs"></div>
+          <div id="resultPanels"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="alt">
+      <div class="wrap">
+        <div class="section-head"><h2>Отзывы</h2></div>
+        <div class="reviews">
+          <div class="card review"><strong>Удобно</strong><span style="color:var(--text-muted);font-size:0.9rem;">Всё в одном месте: текст, сторис, хэштеги.</span></div>
+          <div class="card review"><strong>Быстро</strong><span style="color:var(--text-muted);font-size:0.9rem;">За минуту — три варианта на согласование.</span></div>
+          <div class="card review"><strong>Помогает в работе</strong><span style="color:var(--text-muted);font-size:0.9rem;">Меньше «зависаний» перед постом.</span></div>
+          <div class="card review"><strong>Экономит часы</strong><span style="color:var(--text-muted);font-size:0.9rem;">На контент-план уходит заметно меньше времени.</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap" style="text-align:center;padding:48px 0;">
+        <h2 style="margin-bottom:16px;">Попробуйте создать первый пост прямо сейчас</h2>
+        <a href="#generator" class="btn btn-primary">Открыть генератор</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-grid">
+      <div>
+        <strong style="color:var(--text);">PostCraft</strong> — локальный генератор черновиков постов для соцсетей. Работает в браузере, шаблоны и списки легко править в коде.
+        <p style="margin:12px 0 0;">Подходит SMM-специалистам, экспертам, брендам, магазинам и сервисным бизнесам.</p>
+      </div>
+      <div>
+        <button type="button" class="btn btn-ghost btn-sm" id="btnTop">Наверх</button>
+      </div>
+    </div>
+  </footer>
+
+  <div id="toast-container" aria-live="polite"></div>
+  <script>
+(function () {
+  'use strict';
+
+  /*
+   * ЛОГИКА ГЕНЕРАЦИИ (кратко):
+   * 1) readCtx() собирает поля формы + чекбоксы + переключатели.
+   * 2) flowFor() выбирает порядок смысловых блоков: либо под тип поста (intro/case/…),
+   *    либо под выбранную структуру (AIDA, PAS, …), либо кастом для экспертного текста.
+   * 3) segTable() отдаёт набор массивов шаблонов для типа поста (SEG.*).
+   * 4) composeVariant() случайно (с «сидом») выбирает фразы из пулов и склеивает текст.
+   * 5) applyModifiers / applyFormat доформатировывают длину, списки, усиления.
+   * 6) generatePack() собирает основной пост + альтернативы, сторис, хэштеги и т.д.
+   * Плейсхолдеры в шаблонах: {{niche}}, {{product}}, {{audience}}, {{pain}}, {{usp}}, {{goal}}, {{cta}}, {{keywords}}
+   */
+
+  /* ---------- Конфиг: ниши и пресеты (правьте здесь список ниш) ---------- */
+  var NICHE_LIST = [
+    { id: 'beauty', label: 'Бьюти' },
+    { id: 'clothes', label: 'Одежда' },
+    { id: 'jewelry', label: 'Украшения / ювелирка' },
+    { id: 'marketplace', label: 'Маркетплейсы' },
+    { id: 'handmade', label: 'Handmade' },
+    { id: 'psy', label: 'Психология' },
+    { id: 'realestate', label: 'Недвижимость' },
+    { id: 'edu', label: 'Обучение' },
+    { id: 'florist', label: 'Флористика' },
+    { id: 'sweets', label: 'Кондитерская' },
+    { id: 'furniture', label: 'Мебель' },
+    { id: 'cafe', label: 'Кафе / рестораны' },
+    { id: 'med', label: 'Медицина' },
+    { id: 'cosmo', label: 'Косметология' },
+    { id: 'blog', label: 'Личный блог' },
+    { id: 'kids', label: 'Детские товары' },
+    { id: 'services', label: 'Услуги' },
+    { id: 'travel', label: 'Travel' },
+    { id: 'fitness', label: 'Фитнес' },
+    { id: 'pet', label: 'Pet-ниша' }
+  ];
+
+  var NICHE_PRESETS = {
+    beauty: { niche: 'Бьюти и уход', product: 'Линейка домашнего ухода: крем + сыворотка', audience: 'Девушки 25–40, ценят кожу без «маски» и деликатный результат', goal: 'Заявки в директ на консультацию по уходу', usp: 'Подбираем состав под тип кожи, без агрессивных кислот «наобум»', pain: 'Сухость к вечеру, реакции на новинки, пятнистый тон', cta: 'Напишите «тип кожи» — пришлём мини-план', keywords: 'уход, кожа, glow, деликатно', platform: 'instagram', postType: 'selling', tone: 'friendly' },
+    clothes: { niche: 'Одежда', product: 'Капсула из натуральных тканей на сезон', audience: 'Те, кто хочет меньше вещей, но больше сочетаний', goal: 'Переход в каталог / заказ', usp: 'Посадка и ткань «как в примерке», без сюрпризов по длине', pain: 'Вещи красивые на фото, но неудобные в жизни', cta: 'Сохраните пост — в сторис разберём базовые 5 вещей', keywords: 'капсула, стиль, база', platform: 'instagram', postType: 'selling', tone: 'premium' },
+    jewelry: { niche: 'Украшения', product: 'Серьги и кольца ручной работы из серебра', audience: 'Покупают редко, но надолго; любят историю бренда', goal: 'Продажи и предзаказ', usp: 'Полировка и крепления, которые не цепляются за волосы', pain: 'Дёшево блеск пропадает, дорого — страшно заказывать онлайн', cta: 'Напишите «размер» — подскажем по посадке', keywords: 'silver, handmade, украшения', platform: 'instagram', postType: 'case', tone: 'soft' },
+    marketplace: { niche: 'Маркетплейсы', product: 'Карточка товара + упаковка под ключ', audience: 'Селлеры, которые устали от отказов по качеству контента', goal: 'Заявка на бриф', usp: 'Текст под поиск + визуальная логика, которая не «ломает» конверсию', pain: 'Низкий CTR, штрафы, вечные правки без системы', cta: 'Киньте ссылку на товар — скажем, что усилить в первую очередь', keywords: 'wb, ozon, карточка', platform: 'telegram', postType: 'expert', tone: 'expert' },
+    handmade: { niche: 'Handmade', product: 'Авторские свечи / керамика / декор', audience: 'Те, кто покупает настроение и тактильность, не «просто вещь»', goal: 'Подписка и прогрев к дропу', usp: 'Малая партия, честный состав/обжиг, нормальная упаковка', pain: 'Страшно заказать «не то», бесит однотипный масс-маркет', cta: 'Напишите «палитра» — пришлём варианты оттенков', keywords: 'handmade, автор, декор', platform: 'instagram', postType: 'warming', tone: 'emotional' },
+    psy: { niche: 'Психология', product: 'Индивидуальные сессии + мини-курс по тревоге', audience: 'Взрослые, которые устали «терпеть», но боятся «разносить» жизнь', goal: 'Запись на первую сессию', usp: 'Без осуждения, с понятными шагами, без обещаний «за 3 дня»', pain: 'Тревога в теле, прокрастинация, стыд за отдых', cta: 'Напишите слово «воздух» — пришлём короткий чек-лист', keywords: 'тревога, границы, психолог', platform: 'telegram', postType: 'expert', tone: 'calm' },
+    realestate: { niche: 'Недвижимость', product: 'Подбор квартиры под семью и ипотеку', audience: 'Семьи, которые хотят понимать цифры, а не «красивые слова»', goal: 'Заявка на созвон', usp: 'Считаем полную картину платежа, а не только ставку', pain: 'Страх переплаты, непонятные условия, давление со стороны продавцов', cta: 'Оставьте район и бюджет — пришлём 3 релевантных варианта', keywords: 'ипотека, семья, новостройка', platform: 'vk', postType: 'informational', tone: 'expert' },
+    edu: { niche: 'Обучение', product: 'Практикум по SMM / дизайну / языку', audience: 'Люди, которые хотят навык, а не «сертификат ради галочки»', goal: 'Набор в поток', usp: 'Домашки с разбором, шаблоны, доступ к записи', pain: 'Курсы «для всех», после которых всё равно непонятно с чего начать', cta: 'Напишите «программа» — кинем структуру модуля', keywords: 'обучение, практика, разбор', platform: 'telegram', postType: 'announcement', tone: 'friendly' },
+    florist: { niche: 'Флористика', product: 'Букеты под настроение и подписка на дом', audience: 'Те, кто дарит себе и близким «живое», а не «просто цветы»', goal: 'Заказ в день / на дату', usp: 'Сезонность, нежная упаковка, фото до отправки', pain: 'Разочарование от «как на картинке» vs реальность', cta: 'Напишите дату и палитру — соберём варианты', keywords: 'букет, сезон, эстетика', platform: 'instagram', postType: 'selling', tone: 'feminine' },
+    sweets: { niche: 'Кондитерская', product: 'Торты и десерты на заказ без «химического» привкуса', audience: 'Праздники, семьи, любители «не приторно»', goal: 'Предзаказ на выходные', usp: 'Начинки с балансом кислинки, аккуратная доставка', pain: 'Страх, что будет слишком сладко и «тяжело»', cta: 'Напишите «вкус» — предложим 2 фаворита недели', keywords: 'торт, десерт, на заказ', platform: 'instagram', postType: 'selling', tone: 'friendly' },
+    furniture: { niche: 'Мебель', product: 'Кухни и хранение под размер помещения', audience: 'Ремонт «в процессе», хотят тишину в голове по срокам', goal: 'Замер / проект', usp: 'Фурнитура и материалы с понятными характеристиками', pain: 'Несостыковки по размерам, вечные переносы, скрытые доплаты', cta: 'Оставьте метраж — пришлём ориентир по планировке', keywords: 'кухня, хранение, проект', platform: 'vk', postType: 'case', tone: 'expert' },
+    cafe: { niche: 'Кафе / рестораны', product: 'Завтраки, кофе и сезонное меню', audience: 'Городские, любят «место, куда хочется вернуться»', goal: 'Визит в будни / бронь на выходные', usp: 'Зерно, молоко и выпечка — понятная история, не «магия»', pain: 'Очередь без системы, непредсказуемый вкус', cta: 'Сохраните — в сторис покажем блюдо дня', keywords: 'кофе, завтрак, атмосфера', platform: 'instagram', postType: 'engaging', tone: 'alive' },
+    med: { niche: 'Медицина', product: 'Приём / диагностика / сопровождение', audience: 'Люди, которые хотят ясности и спокойного тона', goal: 'Запись на приём', usp: 'Понятные этапы, аккуратная коммуникация, без запугивания', pain: 'Страх интернета, непонятные анализы, стыд за вопросы', cta: 'Напишите «запись» — подскажем свободное окно', keywords: 'врач, здоровье, спокойно', platform: 'vk', postType: 'informational', tone: 'calm' },
+    cosmo: { niche: 'Косметология', product: 'Аппаратные и уходовые процедуры под задачу кожи', audience: 'Клиенты, которые хотят результат, но боятся «перебора»', goal: 'Консультация косметолога', usp: 'Протокол под тип кожи, без лишних процедур ради чека', pain: 'Раздражение после «универсальных» программ', cta: 'Напишите «кожа» — пришлём чек-лист подготовки', keywords: 'косметолог, кожа, протокол', platform: 'instagram', postType: 'expert', tone: 'premium' },
+    blog: { niche: 'Личный блог', product: 'Авторский контент, рекомендации, партнёрские интеграции', audience: 'Подписчики, которые привыкли к вашему голосу', goal: 'Комментарии и сохранения', usp: 'Честные разборы без «идеальной жизни»', pain: 'Устали от рекламы «в лоб» и пустых историй', cta: 'Напишите, о чём снять следующий пост', keywords: 'блог, честно, истории', platform: 'instagram', postType: 'engaging', tone: 'alive' },
+    kids: { niche: 'Детские товары', product: 'Одежда / игрушки / товары для мам', audience: 'Родители, которые хотят безопасно и без переплат', goal: 'Переход в магазин', usp: 'Составы и сертификация простым языком', pain: 'Страх аллергии, вечный поиск «нормального»', cta: 'Напишите возраст — подберём размерную линейку', keywords: 'дети, безопасно, мама', platform: 'vk', postType: 'selling', tone: 'soft' },
+    services: { niche: 'Услуги', product: 'Бухгалтерия / ремонт / фото / юристы — под ваш кейс', audience: 'Малый бизнес и частные клиенты, ценят ясность', goal: 'Заявка в сообщения', usp: 'Сроки и границы ответственности проговариваем до старта', pain: '«Сделаем когда-нибудь», пропадающие исполнители', cta: 'Опишите задачу в 2 строках — скажем формат работы', keywords: 'услуги, ясность, сроки', platform: 'telegram', postType: 'selling', tone: 'expert' },
+    travel: { niche: 'Travel', product: 'Туры / отели / авторские маршруты', audience: 'Те, кто хочет отдых без сюрпризов в мелочах', goal: 'Запрос на подбор', usp: 'Честные сроки, нормальные трансферы, запасной план', pain: 'Страх скрытых платежей и «другой отель»', cta: 'Напишите даты — соберём 2 варианта под бюджет', keywords: 'путешествия, отдых, маршрут', platform: 'instagram', postType: 'warming', tone: 'emotional' },
+    fitness: { niche: 'Фитнес', product: 'Тренировки / питание / онлайн-сопровождение', audience: 'Люди, которые хотят стабильности, а не «мотивацию на 3 дня»', goal: 'Пробная неделя', usp: 'План под график, без токсичного «нельзя жить»', pain: 'Срывы, боль в суставах от неправильной техники', cta: 'Напишите «старт» — пришлём короткий тест на вход', keywords: 'фитнес, тренировки, режим', platform: 'telegram', postType: 'engaging', tone: 'friendly' },
+    pet: { niche: 'Pet-ниша', product: 'Корма, аксессуары, груминг, зоотовары', audience: 'Владельцы, которые относятся к питомцу как к члену семьи', goal: 'Заказ / визит', usp: 'Подбор под породу и чувствительность ЖКТ', pain: 'Аллергии, вредные составы, непонятные этикетки', cta: 'Напишите породу и возраст — подскажем рацион', keywords: 'питомец, зоо, уход', platform: 'instagram', postType: 'selling', tone: 'friendly' }
+  };
+
+  /* Типы постов, тона, форматы — правьте под себя */
+  var POST_TYPE_OPTIONS = [
+    { value: 'selling', label: 'Продающий' },
+    { value: 'expert', label: 'Экспертный' },
+    { value: 'engaging', label: 'Вовлекающий' },
+    { value: 'informational', label: 'Информационный' },
+    { value: 'warming', label: 'Прогревающий' },
+    { value: 'intro', label: 'Пост-знакомство' },
+    { value: 'promo', label: 'Рекламный' },
+    { value: 'case', label: 'Кейс' },
+    { value: 'review', label: 'Отзыв' },
+    { value: 'announcement', label: 'Анонс' }
+  ];
+
+  var TONE_OPTIONS = [
+    { value: 'soft', label: 'Мягкий' },
+    { value: 'expert', label: 'Экспертный' },
+    { value: 'friendly', label: 'Дружелюбный' },
+    { value: 'premium', label: 'Премиальный' },
+    { value: 'alive', label: 'Живой' },
+    { value: 'emotional', label: 'Эмоциональный' },
+    { value: 'calm', label: 'Спокойный' },
+    { value: 'feminine', label: 'Женственный' },
+    { value: 'universal', label: 'Универсальный' },
+    { value: 'softsell', label: 'Продающий без давления' }
+  ];
+
+  var FORMAT_OPTIONS = [
+    { value: 'short', label: 'Короткий пост' },
+    { value: 'medium', label: 'Средний пост' },
+    { value: 'long', label: 'Длинный пост' },
+    { value: 'paragraphs', label: 'Пост с абзацами' },
+    { value: 'list', label: 'Пост списком' },
+    { value: 'story', label: 'Пост как история' },
+    { value: 'personal', label: 'Личное обращение' },
+    { value: 'article', label: 'Мини-статья' }
+  ];
+
+  var GOAL_CHIPS = [
+    { text: 'Продажи', goal: 'Рост продаж и повторных покупок' },
+    { text: 'Заявки в ЛС', goal: 'Заявки в личные сообщения' },
+    { text: 'Подписчики', goal: 'Набор подписчиков и удержание' },
+    { text: 'Прогрев', goal: 'Прогрев аудитории перед оффером' },
+    { text: 'Знакомство', goal: 'Знакомство с брендом и ценностями' },
+    { text: 'Доверие', goal: 'Повышение доверия через прозрачность' },
+    { text: 'Акция', goal: 'Продвижение акции и срочности без крика' },
+    { text: 'Услуга', goal: 'Анонс услуги и понятный следующий шаг' },
+    { text: 'Запуск', goal: 'Запуск нового продукта / линейки' }
+  ];
+
+  var QUICK_STRUCTURES = [
+    { id: 'default', label: 'Авто (под тип поста)' },
+    { id: 'aida', label: 'AIDA' },
+    { id: 'pas', label: 'PAS' },
+    { id: 'ps', label: 'Проблема → решение' },
+    { id: 'story', label: 'История → вывод → CTA' },
+    { id: 'qpb', label: 'Вопрос → польза → призыв' },
+    { id: 'myth', label: 'Миф → правда → решение' }
+  ];
+
+  var QUICK_PRESETS = {
+    expert: { niche: 'Эксперт / консультант', product: 'Индивидуальные сессии и разбор запроса', audience: 'Люди, которые хотят ясности и спокойного темпа', goal: 'Запись на диагностику', usp: 'Структура, домашние шаги, без давления', pain: 'Тревога, непонимание «с чего начать»', cta: 'Напишите «диагностика» — пришлём 2 варианта слота', keywords: 'эксперт, разбор, ясность', platform: 'telegram', postType: 'expert', tone: 'calm' },
+    shop: { niche: 'Интернет-магазин', product: 'Товар с понятной пользой и доставкой', audience: 'Покупатели, которые сравнивают и читают отзывы', goal: 'Корзина / заказ', usp: 'Честные фото, быстрая отгрузка, нормальная поддержка', pain: 'Страх размера/качества, долгие ответы', cta: 'Напишите «заказ» — подскажем по размеру', keywords: 'магазин, доставка, качество', platform: 'instagram', postType: 'selling', tone: 'friendly' },
+    service: { niche: 'Сервисные услуги', product: 'Услуга «под ключ» с понятным результатом', audience: 'Занятые люди и малый бизнес', goal: 'Заявка и короткий бриф', usp: 'Сроки, этапы, фиксация ожиданий', pain: 'Перегруз, нехватка времени на «разбор полётов»', cta: 'Оставьте задачу в 2 предложениях — ответим с планом', keywords: 'услуги, бриф, сроки', platform: 'telegram', postType: 'selling', tone: 'expert' }
+  };
+
+  /* ---------- Пулы заголовков, CTA, сторис, хэштеги (редактируйте здесь) ---------- */
+  var HEADLINE_POOL = [
+    'Когда {{niche}} начинает раздражать не продукт, а хаос вокруг',
+    'Без морали: просто рабочий ход для {{product}}',
+    '{{audience}} — разберём спокойно, без «волшебных кнопок»',
+    'Если {{pain}} — это не «вы слабые», это сигнал',
+    'Коротко: что реально меняет картину в {{niche}}',
+    'Три вещи, которые обычно ломают результат в {{niche}}',
+    'Честный разговор про {{product}} и ожидания',
+    'Не срочно, но важно: про {{pain}} и что с этим делать',
+    '{{niche}}: мягко, по делу, без давления',
+    'Сохраните: пригодится, когда снова «чистый лист»'
+  ];
+
+  var CTA_POOL = [
+    '{{cta}}',
+    'Если откликается — {{cta}}',
+    'Хотите разобрать ваш случай? {{cta}}',
+    'Напишите одним словом, что ближе — и {{cta}}',
+    'Без обязательств: {{cta}}',
+    'Дальше по шагам: {{cta}}'
+  ];
+
+  var STORIES_POOL = [
+    '1 кадр: боль — «{{pain}}»',
+    '2 кадр: почему так бывает в {{niche}}',
+    '3 кадр: что мы делаем иначе в {{product}}',
+    '4 кадр: микро-кейс / деталь {{usp}}',
+    '5 кадр: мягкий CTA — {{cta}}',
+    'Сторис: вопрос «что для вас важнее?»',
+    'Сторис: миф vs реальность (без агрессии)',
+    'Сторис: «сегодня в Stories — мини-чек-лист»',
+    'Сторис: закадровый процесс / закулисье',
+    'Сторис: ответ на частый комментарий'
+  ];
+
+  var BANNER_PHRASES = [
+    '{{niche}}: спокойнее, чем кажется',
+    'Про {{product}} без шума',
+    '{{usp}} — коротко',
+    'Для {{audience}}',
+    'Шаг ближе к ясности'
+  ];
+
+  var REELS_IDEAS = [
+    'Таймлапс «до/после» внимания к детали + голос за кадром с {{pain}}',
+    '3 мифа о {{niche}} — каждый по 7 секунд, финал: {{cta}}',
+    '«Если бы я советовал себе год назад» про {{product}}'
+  ];
+
+  var PLATFORM_HINTS = {
+    instagram: 'Формат ленты: 1–2 коротких абзаца, лучше читать с мобилы.',
+    telegram: 'TG: можно чуть больше смысла в одном сообщении, сохраните «для себя».',
+    vk: 'VK: добавьте дружелюбный тон обсуждения, вопрос в конце усиливает охват.',
+    universal: 'Универсально: держите одну мысль на экран, остальное — вторым абзацем.'
+  };
+
+  var TONE_MODIFIERS = {
+    premium: ['Выверенная подача', 'Спокойная премиальность', 'Без крика — за счёт деталей'],
+    human: ['Простыми словами', 'Как в разговоре', 'Без канцелярита'],
+    offer: ['Понятный оффер рядом', 'Лёгкая срочность без давления', 'Выгода в одном предложении'],
+    alive: ['Чуть больше темпа', 'Живые формулировки', 'Меньше «идеальности»'],
+    soft: ['Мягкий переход к действию', 'Без навязчивости', 'Уважение к скорости читателя']
+  };
+
+  /* 10+ шаблонов на блок для каждого типа поста (умный конструктор сегментов) */
+  function T(a) { while (a.length < 10) a = a.concat(a); return a.slice(0, 10); }
+
+  var SEG = {};
+  SEG.selling = {
+    hook: T([
+      '{{audience}}: если в «{{niche}}» вас достало, что {{pain}} — вы не одни.',
+      'Про {{product}} без лишнего шума: это ответ на {{pain}}, без «магии».',
+      'Скажу честно: в {{niche}} часто путают активность и результат. {{product}} — про другое.',
+      'Короткий тест: если {{pain}} — вам сюда. Если нет — листайте дальше, ок.',
+      'Мне пишут с одним и тем же запросом: «хочется проще». {{product}} как раз про это.',
+      'Не «уникально для всех». А конкретно: {{pain}} → понятный следующий шаг.',
+      '{{audience}} — вы не обязаны разбираться во всём сами. {{product}} снимает лишнее.',
+      'Если вы устали от обещаний «на 3 дня», {{niche}} можно вести спокойнее.',
+      'Сегодня без морали: просто разбор, почему {{pain}} не исчезает «само».',
+      'Лайфхак дня в {{niche}}: начните не с контента, а с ясности про {{product}}.'
+    ]),
+    pain: T([
+      'Боль №1: {{pain}} — и это нормально, если вы давно в теме.',
+      'Знакомо? {{pain}} — и кажется, что «так у всех».',
+      'Чаще всего спотыкаемся ровно здесь: {{pain}}.',
+      '{{pain}} крадёт время и настроение — особенно когда нужен стабильный результат.',
+      'Если коротко: {{pain}} — не характер, а система.',
+      '{{pain}} обычно усиливается, когда нет простого плана на неделю.',
+      'И ещё момент: {{pain}} часто маскируется под «мало мотивации».',
+      'Без драмы: {{pain}} решается не «силой воли», а нормальной логикой.',
+      '{{pain}} — сигнал, что пора убрать лишнее из процесса.',
+      'Если вы узнали себя в {{pain}} — вы уже на полпути.'
+    ]),
+    pain2: T([
+      'Усилим честно: {{pain}} не уйдёт, если игнорировать детали.',
+      'Вторая часть правды: {{pain}} обычно связано с ожиданиями «как у других».',
+      'И да — {{pain}} раздражает сильнее, когда рядом шумные обещания.',
+      'Копнём глубже: {{pain}} часто держится на мелочах, которые легко поправить.',
+      'Не для устрашения: просто {{pain}} любит повторяться без системы.',
+      'Ещё слой: {{pain}} усиливается, когда нет обратной связи.',
+      'Без паники: {{pain}} — рабочий материал, не приговор.',
+      'Иногда {{pain}} — это не продукт, а неудачная коммуникация.',
+      'Правда такая: {{pain}} лечится последовательностью, не рывками.',
+      'Если {{pain}} — про вас, не вините себя: это рынок {{niche}}.'
+    ]),
+    sol: T([
+      'Что делаем по факту: {{product}} закрывает узкое место — {{usp}}.',
+      'Наш ход простой: {{product}} + ясные шаги, без перегруза.',
+      'Решение без пафоса: {{product}} — чтобы {{goal}} было ближе.',
+      'Мы собрали {{product}} так, чтобы {{pain}} не возвращалась из‑за «мелочей».',
+      'Каркас: {{product}}. Усиление: {{usp}}. Результат: спокойнее в голове.',
+      'По делу: {{product}} помогает не «больше постить», а точнее попадать.',
+      'Если по-взрослому: {{product}} — это процесс, где видно прогресс.',
+      'Схема: диагностика → {{product}} → понятный итог для {{audience}}.',
+      'Мы не обещаем «всё и сразу». {{product}} — про устойчивость.',
+      'Коротко: {{product}} переводит {{pain}} в задачу с дедлайном.'
+    ]),
+    ben: T([
+      'Выгода на человеческом: меньше суеты, больше ясности в {{niche}}.',
+      'Вам проще продавать/объяснять, когда {{usp}} ложится в логичную историю.',
+      'Экономия внимания: не собирать текст из кусков ночью.',
+      'Клиенту спокойнее: понятно, что вы не «разовый пост», а система.',
+      'Вы быстрее согласуете смыслы — потому что структура уже есть.',
+      'Меньше стыда за «сырой» текст: есть каркас, осталось вашим голосом.',
+      'Легче тестировать гипотезы, когда база не прыгает каждый раз.',
+      'В {{niche}} это ощущается как спокойная уверенность, не крик.',
+      'Плюс: {{goal}} звучит естественно, без натянутости.',
+      'И да — {{keywords}} остаются в пользу, а не «ради галочки».'
+    ]),
+    val: T([
+      'Усиление ценности: {{usp}} — это не «фишка», а спокойствие клиента.',
+      'Добавим смысл: вы показываете заботу о времени {{audience}}.',
+      'Важный нюанс: в {{niche}} доверие растёт из деталей — мы их не прячем.',
+      'Ещё плюс: меньше возвратов/возражений, когда ожидания честные.',
+      'Секунда уважения к читателю: без манипуляций, только ясность.',
+      'Если премиально: {{product}} держит тон «дорого», но тепло.',
+      'Для бренда это выглядит собранно: один стиль — разные задачи.',
+      'И финальный штрих: {{goal}} не выглядит навязчиво.',
+      'Мы усиливаем не громкость, а понятность.',
+      'Это про устойчивость: {{niche}} любит последовательность.'
+    ]),
+    interest: T([
+      'Интересно? Смотрите, как {{product}} меняет ощущение от {{niche}}.',
+      'Зацепка: {{usp}} звучит скучно, пока не увидишь в цифрах/деталях.',
+      'Внимание: {{pain}} можно снять без радикальных шагов.',
+      'Любопытный факт: {{audience}} чаще выбирает спокойную уверенность.',
+      'Мини-инсайт: {{niche}} растёт, когда меньше «шума» в коммуникации.',
+      'Интрига мягкая: {{product}} раскрывается, когда читатель дочитает.',
+      'Крючок без крика: {{goal}} ближе, чем кажется.',
+      'Смотрите иначе: {{usp}} — это про комфорт, не про статус.',
+      'Заметили? {{pain}} почти всегда про нехватку структуры.',
+      'Интерес держим на пользе: {{keywords}} работают в связке.'
+    ]),
+    desire: T([
+      'Хочется так же спокойно? Это как раз про {{product}}.',
+      'Хочется ближе к {{goal}} — без выгорания на контенте.',
+      'Представьте: {{pain}} не висит фоном неделями.',
+      'Лёгкое желание: чтобы {{niche}} ощущалась «собранной».',
+      'Тянет попробовать, когда {{usp}} звучит честно.',
+      'Ок, мечтаем: стабильный поток обращений и ясные смыслы.',
+      'Хочется доверия — его дают детали и темп, не капслок.',
+      'Иногда хочется просто «сделайте красиво» — мы даём основу.',
+      'Желание клиента простое: меньше риска, больше понимания.',
+      'Хочется результата: {{goal}} — и нормальный сон.'
+    ]),
+    story: T([
+      'История на минуту: ко мне часто приходят из {{niche}} с {{pain}}.',
+      'Был кейс: {{audience}} устали от «красивых слов» без процесса.',
+      'Помню запрос: «сделайте, чтобы не стыдно было выложить». {{product}} помог.',
+      'Короткая зарисовка: вы пишете пост в 23:45 — и это не про вас одних.',
+      'На практике {{niche}} ломается не идеей, а рутиной.',
+      'Расскажу по-человечески: сначала был хаос, потом появилась система.',
+      'Мини-история: клиент боялся «слишком продажно». Мы нашли мягкий тон.',
+      'Было смешно и грустно: {{pain}} решали «новым постом каждый день».',
+      'История про доверие: люди читают не баннеры — они читают логику.',
+      'Однажды поняли: {{goal}} ближе, когда убрали лишнее.'
+    ]),
+    trust: T([
+      'Почему верить: мы говорим о границах, сроках и том, что не обещаем.',
+      'Без пафоса: {{usp}} — это то, что можно проверить.',
+      'Прозрачность: если не зайдёт — обсудим, без «вы не так поняли».',
+      'Доверие строится на повторяемости, не на одном удачном посте.',
+      'Мы не прячемся за «секретной методологией» — есть шаги.',
+      'В {{niche}} важно не «как красиво», а как устойчиво.',
+      'Честно: идеальных кейсов не бывает — бывает адекватный процесс.',
+      'Мы держим слово про {{product}} — потому что любим спокойных клиентов.',
+      'Если коротко: меньше обещаний, больше понятных действий.',
+      'Вам спокойнее, когда {{audience}} чувствует заботу, не давление.'
+    ]),
+    soft: T([
+      'Мягко: если откликнулось — {{cta}}.',
+      'Без обязаловки: посмотрите, зайдёт ли вам тон {{niche}}.',
+      'Если хочется обсудить — я рядом. {{cta}}',
+      'Можно просто сохранить и вернуться, когда будет воздух.',
+      'Двигаемся в вашем темпе: {{cta}}',
+      'Если не сейчас — ок. Когда будет запрос, {{cta}}',
+      'Мягкий шаг: {{cta}}',
+      'Я не «дожму». Если интересно — {{cta}}',
+      'Спокойное приглашение: {{cta}}',
+      'Когда будет настроение разобрать — {{cta}}'
+    ]),
+    q: T([
+      'Вопрос: что для вас важнее в {{niche}} — скорость или спокойствие?',
+      'Скажите честно: {{pain}} — про вас?',
+      'Как вы обычно выбираете {{product}} — по отзывам или по ощущению?',
+      'Что сейчас ближе: «хочу быстрее» или «хочу без ошибок»?',
+      'Маленький чек: {{audience}} — узнаёте себя?',
+      'Какой формат вам заходит — коротко или с подробностями?',
+      'Что остановило в последний раз перед {{goal}}?',
+      'Если убрать страх: что бы вы попробовали в {{niche}}?',
+      'Вопрос дня: {{pain}} — решаемо?',
+      'Что для вас значит «качественно» про {{product}}?'
+    ]),
+    myth: T([
+      'Миф: в {{niche}} «достаточно выложить раз в неделю».',
+      'Миф: {{pain}} вылечится «виральным» постом.',
+      'Миф: {{product}} «и так продастся», если красиво сфоткать.',
+      'Миф: аудитория хочет только скидки.',
+      'Миф: экспертность = сложные слова.',
+      'Миф: в {{niche}} не важен тон — важен охват.',
+      'Миф: можно копировать чужие тексты без последствий.',
+      'Миф: {{goal}} достигается только рекламой.',
+      'Миф: {{audience}} не читает длинно.',
+      'Миф: главное — идея, а структура не важна.'
+    ]),
+    truth: T([
+      'Правда: важнее система и ясные смыслы, чем «идеальный» день.',
+      'Правда: {{pain}} снимается процессом, не одним постом.',
+      'Правда: {{usp}} должно быть видно быстро — иначе люди уходят.',
+      'Правда: люди покупают спокойствие и понятность.',
+      'Правда: экспертность — это ясные примеры и границы.',
+      'Правда: в {{niche}} доверие = повторяемость + честность.',
+      'Правда: копипаст убивает голос бренда.',
+      'Правда: {{goal}} растёт, когда контент помогает выбрать.',
+      'Правда: {{audience}} читает, если есть смысл и уважение к времени.',
+      'Правда: структура экономит вам недели.'
+    ]),
+    insight: T([
+      'Инсайт: {{pain}} часто связано с неправильным ожиданием скорости.',
+      'Смысл простой: {{niche}} любит последовательность больше, чем хайп.',
+      'Объясняю без занудства: {{product}} работает, когда есть один фокус.',
+      'Инсайт для {{audience}}: мозг любит ясность, не «всё сразу».',
+      'Коротко по сути: {{usp}} — это фильтр лишнего.',
+      'Важно: доверие не к посту — к линии поведения.',
+      'Инсайт: {{goal}} ближе, когда вы говорите на языке боли.',
+      'Без воды: {{keywords}} работают в связке с историей.',
+      'Смысл: {{niche}} покупает не обещание, а понятный путь.',
+      'Вывод мягкий: {{pain}} — точка входа, не стыд.'
+    ]),
+    who: T([
+      'Кто я: человек, который помогает в {{niche}} говорить спокойно и ясно.',
+      'Коротко обо мне: делаю контент, который не стыдно отправить клиенту.',
+      'Я про {{niche}} уже давно — и всё ещё люблю детали.',
+      'Мой фокус: {{product}} без перегруза и без «продажного угара».',
+      'Если по-простому: я собираю смыслы, чтобы {{audience}} понимала с первого экрана.',
+      'Я не «гуру». Я практик: {{niche}} + здравый смысл.',
+      'Обо мне: ценю честность больше, чем «красивые цифры».',
+      'Я про процесс: чтобы {{goal}} не был случайностью.',
+      'Кто я для вас: поддержка в {{niche}}, без морали.',
+      'Я здесь, чтобы {{pain}} перестало звучать как приговор.'
+    ]),
+    help: T([
+      'Чем полезен: помогаю собрать {{product}} в понятную историю.',
+      'Что делаю: перевожу {{niche}} с «хочу» на «вот шаги».',
+      'Польза простая: меньше белого листа — больше готовых формулировок.',
+      'Я усиливаю {{usp}} так, чтобы это было естественно.',
+      'Помогаю {{audience}} быстрее понять, зачем вы.',
+      'Моя зона: структура, смысл, тон — под {{goal}}.',
+      'Даю опору: тексты, которые можно адаптировать, а не выбрасывать.',
+      'Полезно тем, кто устал от {{pain}}.',
+      'Я помогаю звучать взросло — без скуки.',
+      'Смысл один: {{product}} должен быть понятен с полустрочки.'
+    ]),
+    for: T([
+      'Для кого: для {{audience}} — особенно если вы устали от хаоса.',
+      'Это вам, если {{pain}} — не абстракция, а ежедневность.',
+      'Подойдёт тем, кто хочет {{goal}} без крика и давления.',
+      'Если вы в {{niche}} и цените спокойный темп — мы совпали.',
+      'Для тех, кому важно {{usp}} — не только «красиво на картинке».',
+      'Вам, если хочется текста, который можно отправить клиенту как есть.',
+      'Для малых брендов и экспертов, которые не хотят «как у всех».',
+      'Если вы устали оправдываться за качество контента — welcome.',
+      'Для {{audience}}, которые читают между строк.',
+      'Подойдёт, если вы хотите систему, не разовый креатив.'
+    ]),
+    trustline: T([
+      'Почему можно доверять: говорю о границах, сроках и рисках.',
+      'Без сказок: если не зайдёт — скажу прямо.',
+      'Я на стороне здравого смысла в {{niche}}.',
+      'Доверие — это повторяемость, я её соблюдаю.',
+      'Не обещаю «вечную виральность» — это честно.',
+      'Мне важно, чтобы {{audience}} чувствовала уважение.',
+      'Я не продаю воздух — только то, что можно применить.',
+      'Моя репутация дороже одного поста.',
+      'Если сомневаетесь — начните с малого шага: {{cta}}',
+      'Прозрачность важнее красивых слов — всегда.'
+    ]),
+    res: T([
+      'Результат: {{audience}} стало проще дойти до {{goal}}.',
+      'Итог: {{pain}} перестало быть «фоном каждый день».',
+      'Что получили: ясная линия коммуникации вокруг {{product}}.',
+      'Цифры говорят скромно, но стабильно — а это ценнее хайпа.',
+      'Факт: выросло доверие к деталям и {{usp}}.',
+      'Итог для {{niche}}: меньше суеты, больше понятных сообщений.',
+      'Результат — когда клиенты пишут «наконец-то понятно».',
+      'Выиграли время: тексты собираются быстрее.',
+      'Получилось спокойно усилить {{keywords}} без крика.',
+      'Главное: {{goal}} перестал звучать натянуто.'
+    ]),
+    step: T([
+      'Как шли: сначала разобрали {{pain}}, потом собрали {{product}} в логику.',
+      'Шаг 1 — ясность. Шаг 2 — {{usp}}. Шаг 3 — спокойный CTA.',
+      'Мы не прыгали: тест → правка → закрепление.',
+      'Процесс был простой: диалог, структура, финальная шлифовка.',
+      'Важно было не «красиво», а чтобы {{audience}} поняла с первого абзаца.',
+      'Сделали акцент на деталях — они и продали.',
+      'Убрали лишнее — осталась суть {{niche}}.',
+      'Синхронизировали ожидания — и только потом усилили оффер.',
+      'Ключевой момент: честность про сроки и формат.',
+      'Финиш: {{cta}} стал естественным, не «продажным».'
+    ]),
+    voice: T([
+      'Отзыв: «Не ожидала, что {{niche}} можно так спокойно».',
+      'Клиент сказал: «Наконец-то без стыда выложить».',
+      'Голос клиента: «{{pain}} реально стало меньше».',
+      'Отклик: «Понятно, что делать дальше».',
+      'Мне написали: «Это про нас, без натяжки».',
+      'Отзыв короткий: «Работает».',
+      '«Страшно было начать — помогли тоном» — дословно.',
+      '«{{usp}} наконец звучит как правда».',
+      '«{{product}} стало легче объяснять».',
+      '«{{goal}} ближе, чем думала».'
+    ]),
+    detail: T([
+      'Деталь, которая решила: мы убрали лишние обещания.',
+      'Понравилось, что говорили просто про {{pain}}.',
+      'Отдельно зашла честность про сроки.',
+      'Классно, что {{usp}} было в центре, не «в конце мелким».',
+      'Зацепило: уважение к времени {{audience}}.',
+      'Важно было услышать про риски — и их назвали.',
+      'Детали про {{product}} сняли сомнения.',
+      'Понравилась структура: читать легко с телефона.',
+      'Отдельный плюс: мягкий CTA.',
+      'Сработало: {{keywords}} без спама.'
+    ]),
+    rec: T([
+      'Рекомендую, если вы в {{niche}} и хотите ясности.',
+      'Смело пробуйте — особенно если {{pain}} знакомо.',
+      'Если вам важен спокойный тон — это оно.',
+      'Для {{audience}} — очень по делу.',
+      'Передаю дальше: {{product}} реально помогает.',
+      'Если сомневаетесь — начните с малого: {{cta}}',
+      'Я бы повторила: без давления, но с результатом.',
+      'Рекомендация короткая: попробуйте и сравните с «как было».',
+      'Если нужен {{goal}} — заходите.',
+      'Однозначно: {{usp}} ощущается честно.'
+    ]),
+    teaser: T([
+      'Скоро: {{product}} — то, что вы просили в комментариях.',
+      'Анонс без пафоса: готовим запуск в {{niche}}.',
+      'Сохраняйте: {{goal}} станет ближе на этой неделе.',
+      'Мы собрали {{usp}} в понятный формат — скоро покажем.',
+      'Спойлер: {{pain}} мы взяли в работу.',
+      'Анонс мягкий: для {{audience}} будет полезно.',
+      'Следите: {{keywords}} — не просто слова, а смысл.',
+      'Скоро расскажем, как {{product}} экономит время.',
+      'Запуск близко — без крика, зато с деталями.',
+      'Готовим сюрприз для тех, кто устал от шаблонов.'
+    ]),
+    what: T([
+      'Что именно: {{product}} + понятные шаги.',
+      'Внутри: {{usp}} и поддержка на старте.',
+      'Суть: чтобы {{goal}} не был «когда-нибудь».',
+      'Вы получите: структуру, примеры, спокойный тон.',
+      'Формат: удобно для {{audience}}.',
+      'Это про {{niche}} — практично и по-взрослому.',
+      'Будет: разбор {{pain}} и рабочие формулировки.',
+      'Мы добавили то, чего не хватало: ясность.',
+      'Конкретика вместо «скоро-скоро».',
+      'Вы увидите, как {{product}} выглядит вживую.'
+    ]),
+    when: T([
+      'Когда: на этой неделе — следите за Stories.',
+      'Старт: объявим дату в комментариях.',
+      'Тайминг: удобно для тех, кто работает в будни.',
+      'Откроем доступ постепенно — справедливо для всех.',
+      'Следующий шаг — {{cta}}',
+      'Дата — в закрепе, не пропустите.',
+      'Запуск ближе, чем кажется.',
+      'Скоро откроем окно записи.',
+      'Напомним за день — без спама.',
+      'Когда будет готово — напишем честно.'
+    ]),
+    move: T([
+      'Что делать сейчас: {{cta}}',
+      'Следующий шаг простой: {{cta}}',
+      'Чтобы не потерять: сохраните пост.',
+      'Хотите в списке первых — {{cta}}',
+      'Напишите «+» — пришлём детали.',
+      'Оставьте реакцию — поймём интерес.',
+      'Подпишитесь, если {{niche}} — ваша тема.',
+      'Комментарий «хочу» — и мы ответим.',
+      'Заберите чек-лист: {{cta}}',
+      'Дальше вместе: {{cta}}'
+    ]),
+    scene: T([
+      'Представьте вечер: вы листаете ленту и ловите себя на {{pain}}.',
+      'Ситуация знакомая: {{audience}} в деле, а контент «не цепляет».',
+      'Картинка: дедлайн горит, а текст не складывается.',
+      'Мини-сцена: клиент спрашивает «а что у вас лучше?» — и вы не уверены.',
+      'Будничное: {{niche}} вечно откладывается «на потом».',
+      'Типично: сравниваете себя с другими и злитесь.',
+      'Сцена: вы хотите {{goal}}, но страшно ошибиться.',
+      'Знакомо: {{product}} классный, а объяснить сложно.',
+      'Лента шумит, а вам хочется тишины и ясности.',
+      'Вы пишете, стираете, снова пишете — узнаёте?'
+    ]),
+    feel: T([
+      'Эмоция: раздражение → облегчение, когда есть структура.',
+      'Чувство: стыд за «сырой» текст — можно убрать.',
+      'Нервозность сменяется спокойствием, когда понятен план.',
+      'Усталость от {{pain}} — не приговор.',
+      'Иногда хочется просто выдохнуть — и это нормально.',
+      'Тревога уходит, когда {{usp}} звучит честно.',
+      'Радость маленькая: пост написан без мучений.',
+      'Гордость тихая: {{audience}} отвечает.',
+      'Лёгкость: {{goal}} не кажется «натянутым».',
+      'Тепло: в {{niche}} снова хочется быть.'
+    ]),
+    invite: T([
+      'Расскажите в комментариях: узнаёте себя?',
+      'Напишите, что для вас сложнее — разберём.',
+      'Кидайте реакцию, если {{pain}} близко.',
+      'Хочется диалога: что мешает вам в {{niche}}?',
+      'Скиньте «?» — отвечу в треде.',
+      'Поставьте сохранение — сделаем продолжение.',
+      'Жду ваш вариант истории в комментариях.',
+      'Давайте честно: что бы вы добавили?',
+      'Напишите одним словом ваше состояние.',
+      'Соберём вместе: {{cta}}'
+    ])
+  };
+
+  SEG.expert = {
+    hook: T([
+      '{{audience}}: разберём {{niche}} без магии и без запугивания.',
+      'Короткая лекция на минуту: почему {{pain}} повторяется.',
+      'Экспертно, но по-человечески: что важно знать про {{product}}.',
+      'Если вы в {{niche}}, этот текст сэкономит вам вечер.',
+      'Без «уникально для всех»: фокус на {{pain}}.',
+      'Сегодня — не мотивация, а механика: как работает {{usp}}.',
+      'Тезис: {{goal}} ближе, когда убираете лишнее.',
+      'Объясняю спокойно: {{niche}} ≠ вечная гонка.',
+      'Вопрос не в таланте. Вопрос в структуре и {{product}}.',
+      'Для {{audience}}: три ошибки, которые усиливают {{pain}}.'
+    ]),
+    pain: SEG.selling.pain,
+    pain2: SEG.selling.pain2,
+    sol: T([
+      'Как это устроено: {{product}} держится на {{usp}}.',
+      'Практика: сначала диагностика {{pain}}, потом шаги.',
+      'Схема для {{niche}}: ясность → действие → проверка.',
+      'Если по-взрослому: решение — это процесс, где виден прогресс.',
+      'Объясняю на пальцах: {{product}} снимает ключевой затык.',
+      'Без воды: {{goal}} достигается, когда вы говорите простыми словами.',
+      'Так работает: малые шаги вместо «большого рывка».',
+      'Секрет скучный, но рабочий: повторяемость и честные ожидания.',
+      'Инструмент: {{usp}} как фильтр решений.',
+      'Практический вывод: {{keywords}} — не декорация, а смысл.'
+    ]),
+    ben: SEG.selling.ben,
+    val: SEG.selling.val,
+    interest: SEG.selling.interest,
+    desire: SEG.selling.desire,
+    story: SEG.selling.story,
+    trust: SEG.selling.trust,
+    soft: SEG.selling.soft,
+    q: SEG.selling.q,
+    myth: SEG.selling.myth,
+    truth: SEG.selling.truth,
+    insight: SEG.selling.insight,
+    who: SEG.selling.who,
+    help: SEG.selling.help,
+    for: SEG.selling.for,
+    trustline: SEG.selling.trustline,
+    res: SEG.selling.res,
+    step: SEG.selling.step,
+    voice: SEG.selling.voice,
+    detail: SEG.selling.detail,
+    rec: SEG.selling.rec,
+    teaser: SEG.selling.teaser,
+    what: SEG.selling.what,
+    when: SEG.selling.when,
+    move: SEG.selling.move,
+    scene: SEG.selling.scene,
+    feel: SEG.selling.feel,
+    invite: SEG.selling.invite
+  };
+
+  SEG.engaging = JSON.parse(JSON.stringify(SEG.expert));
+  SEG.engaging.hook = T([
+    'Остановите скролл на секунду: {{pain}} — это про вас?',
+    'Мини-опрос: {{audience}}, как вы решаете {{pain}}?',
+    'Честный вопрос дня про {{niche}}.',
+    'Кто узнал себя: {{pain}} + вечерний дедлайн?',
+    'Скажите «да» в комментариях, если {{product}} уже на слуху.',
+    'Интерактив мягкий: что бесит сильнее в {{niche}}?',
+    'Лайк, если устали от шаблонных текстов.',
+    'Сохраните, если {{goal}} важен, но руки не доходят.',
+    'Кидайте эмодзи настроения — обсудим.',
+    'Вопрос без подвоха: вам важнее скорость или ясность?'
+  ]);
+
+  SEG.warming = JSON.parse(JSON.stringify(SEG.selling));
+  SEG.warming.hook = T([
+    'Я давно в {{niche}} — и всё ещё учусь не перегружать людей.',
+    'История маленькая: как я полюбил {{product}} не из маркетинга, а из практики.',
+    'Было время, когда {{pain}} казалось «нормой». Сейчас иначе.',
+    'Мне важно, чтобы {{audience}} чувствовала: здесь без осуждения.',
+    'Сегодня тепло и по делу: про {{usp}} и почему это не «просто слова».',
+    'Я не идеален(а) — зато честно про {{niche}}.',
+    'Когда-то я тоже боялся(ась) звучать «продажно». Понимаю.',
+    'Этот пост — про доверие, которое строится мелочами.',
+    'Если вы устали от хайпа — добро пожаловать.',
+    'Мягко напомню: {{goal}} можно достигать спокойно.'
+  ]);
+
+  SEG.intro = JSON.parse(JSON.stringify(SEG.selling));
+  SEG.intro.hook = SEG.intro.who;
+
+  SEG.case = JSON.parse(JSON.stringify(SEG.selling));
+  SEG.case.hook = T([
+    'Кейс без глянца: {{niche}} + {{pain}} → что сделали.',
+    'Разбор «как есть»: {{audience}} и {{product}}.',
+    'Короткий кейс: цель была {{goal}}.',
+    'История результата: без «в 10 раз», зато честно.',
+    'Покажу механику: {{usp}} в действии.',
+    'Кейс на человеческом: ошибки, правки, итог.',
+    'Для тех, кто любит детали: {{niche}} изнутри.',
+    'Фокус: что реально помогло с {{pain}}.',
+    'Не лучший в мире — но наш, рабочий.',
+    'Кейс для {{audience}}: спокойно и по шагам.'
+  ]);
+
+  SEG.review = JSON.parse(JSON.stringify(SEG.selling));
+  SEG.review.hook = SEG.review.voice;
+
+  SEG.announcement = JSON.parse(JSON.stringify(SEG.selling));
+  SEG.announcement.hook = SEG.announcement.teaser;
+
+  SEG.informational = SEG.expert;
+  SEG.promo = SEG.selling;
+
+  /* Порядок смысловых блоков под структуру (AIDA, PAS и т.д.) */
+  var STRUCT_FLOW = {
+    default: ['hook', 'pain', 'sol', 'ben', 'val'],
+    aida: ['hook', 'interest', 'desire', 'sol'],
+    pas: ['pain', 'pain2', 'sol', 'ben'],
+    ps: ['pain', 'sol', 'ben'],
+    story: ['story', 'trust', 'ben', 'soft'],
+    qpb: ['q', 'ben', 'soft'],
+    myth: ['myth', 'truth', 'sol']
+  };
+
+  var TYPE_FLOW = {
+    intro: ['who', 'help', 'for', 'trustline'],
+    case: ['hook', 'step', 'res', 'ben'],
+    review: ['hook', 'detail', 'ben', 'rec'],
+    announcement: ['teaser', 'what', 'when', 'move'],
+    engaging: ['q', 'scene', 'feel', 'invite'],
+    warming: ['hook', 'story', 'trust', 'soft'],
+    expert: null,
+    informational: null,
+    selling: null,
+    promo: null
+  };
+
+  var STORAGE_KEY = 'postcraft_v1';
+  var lastPack = null;
+  var currentStructure = 'default';
+
+  function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+  function pickMany(arr, n) {
+    var a = arr.slice(), out = [];
+    while (out.length < n && a.length) {
+      var i = Math.floor(Math.random() * a.length);
+      out.push(a.splice(i, 1)[0]);
+    }
+    return out;
+  }
+
+  function fill(tpl, ctx) {
+    return tpl.replace(/\{\{(\w+)\}\}/g, function (_, k) {
+      return (ctx[k] != null && ctx[k] !== '') ? String(ctx[k]) : '';
+    }).replace(/\s+/g, ' ').replace(/\s([.,!?])/g, '$1').trim();
+  }
+
+  function readCtx() {
+    function val(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; }
+    function chk(id) { var el = document.getElementById(id); return el && el.checked; }
+    var niche = val('f_niche') || 'вашу нишу';
+    var product = val('f_product') || 'ваш продукт';
+    var audience = val('f_audience') || 'ваша аудитория';
+    var platform = val('f_platform') || 'universal';
+    var postType = val('f_type') || 'selling';
+    var tone = val('f_tone') || 'universal';
+    var goal = val('f_goal') || 'сделать следующий шаг проще';
+    var usp = val('f_usp') || 'ваше сильное отличие';
+    var pain = val('f_pain') || 'типичную боль аудитории';
+    var cta = val('f_cta') || 'напишите в сообщения — подскажем по делу';
+    var keywords = val('f_keywords') || niche;
+    var extra = val('f_extra');
+    return {
+      niche: niche,
+      product: product,
+      audience: audience,
+      platform: platform,
+      postType: postType,
+      tone: tone,
+      goal: goal,
+      usp: usp,
+      pain: pain,
+      cta: cta,
+      keywords: keywords,
+      extra: extra,
+      length: val('f_length') || 'medium',
+      format: val('f_format') || 'paragraphs',
+      chk: {
+        emoji: chk('c_emoji') || (document.getElementById('tog_emoji') && document.getElementById('tog_emoji').checked),
+        noemoji: chk('c_noemoji'),
+        expensive: chk('c_expensive'),
+        human: chk('c_human'),
+        benefit: chk('c_benefit'),
+        offer: chk('c_offer'),
+        softcta: chk('c_softcta'),
+        creative: chk('c_creative'),
+        sales: chk('c_sales'),
+        eng: chk('c_eng'),
+        trust: chk('c_trust')
+      },
+      tog: {
+        premium: document.getElementById('tog_premium') && document.getElementById('tog_premium').checked,
+        human: document.getElementById('tog_human') && document.getElementById('tog_human').checked,
+        offer: document.getElementById('tog_offer') && document.getElementById('tog_offer').checked,
+        alive: document.getElementById('tog_alive') && document.getElementById('tog_alive').checked,
+        soft: document.getElementById('tog_soft') && document.getElementById('tog_soft').checked
+      }
+    };
+  }
+
+  function resolveEmoji(ctx) {
+    if (ctx.chk.noemoji) return false;
+    if (ctx.chk.emoji) return true;
+    return document.getElementById('tog_emoji') && document.getElementById('tog_emoji').checked;
+  }
+
+  function emojiFor(ctx, i) {
+    var set = ['✨', '👉', '💬', '📌', '🔎', '☕', '🤍', '✅', '📎', '🎯'];
+    return resolveEmoji(ctx) ? (' ' + pick(set)) : '';
+  }
+
+  function flowFor(ctx) {
+    var t = ctx.postType;
+    if (TYPE_FLOW[t]) return TYPE_FLOW[t];
+    var s = currentStructure === 'default' ? 'default' : currentStructure;
+    var f = STRUCT_FLOW[s] || STRUCT_FLOW.default;
+    if (t === 'expert' || t === 'informational') {
+      if (s === 'default') return ['hook', 'pain', 'insight', 'sol', 'ben'];
+    }
+    return f;
+  }
+
+  function segTable(type) {
+    return SEG[type] || SEG.selling;
+  }
+
+  function composeVariant(ctx, seedOffset) {
+    var table = segTable(ctx.postType === 'informational' ? 'expert' : (ctx.postType === 'promo' ? 'selling' : ctx.postType));
+    var flow = flowFor(ctx);
+    var parts = [];
+    var rnd = (Date.now() % 997) + seedOffset * 13;
+    for (var i = 0; i < flow.length; i++) {
+      var key = flow[i];
+      var pool = table[key] || SEG.selling[key] || SEG.selling.hook;
+      var tpl = pool[(rnd + i * 17) % pool.length];
+      parts.push(fill(tpl, ctx));
+      rnd += 31;
+    }
+    var ctaLine = fill(pick(CTA_POOL), ctx);
+    parts.push(ctaLine);
+    var body = parts.join('\n\n');
+    if (ctx.extra) body += '\n\nP.S. ' + ctx.extra + emojiFor(ctx, 0);
+    return applyFormat(body, ctx);
+  }
+
+  function applyFormat(text, ctx) {
+    var f = ctx.format;
+    if (f === 'list') {
+      return text.split('\n\n').map(function (p, i) { return (i + 1) + ') ' + p.replace(/\n/g, ' '); }).join('\n');
+    }
+    if (f === 'short' || ctx.length === 'short') {
+      var arr = text.split('\n\n');
+      return arr.slice(0, 3).join('\n\n');
+    }
+    if (f === 'long' || ctx.length === 'long') {
+      return text + '\n\n' + fill(pick(SEG.selling.val), ctx);
+    }
+    if (f === 'story') return fill(pick(SEG.selling.story), ctx) + '\n\n' + text;
+    if (f === 'personal') return fill(pick(SEG.selling.who), ctx) + '\n\n' + text;
+    if (f === 'article') return text + '\n\nИтог: ' + fill(pick(SEG.selling.insight), ctx);
+    return text;
+  }
+
+  function applyModifiers(text, ctx, mode) {
+    var lines = [];
+    if (mode === 'premium' || ctx.tog.premium || ctx.chk.expensive) lines.push(pick(TONE_MODIFIERS.premium));
+    if (mode === 'human' || ctx.tog.human || ctx.chk.human) lines.push(pick(TONE_MODIFIERS.human));
+    if (mode === 'offer' || ctx.tog.offer || ctx.chk.offer) lines.push(pick(TONE_MODIFIERS.offer));
+    if (mode === 'alive' || ctx.tog.alive || ctx.chk.creative) lines.push(pick(TONE_MODIFIERS.alive));
+    if (mode === 'soft' || ctx.tog.soft || ctx.chk.softcta) lines.push(pick(TONE_MODIFIERS.soft));
+    if (ctx.chk.benefit) text = text + '\n\n' + fill(pick(SEG.selling.ben), ctx);
+    if (ctx.chk.sales) text = text + '\n\n' + fill(pick(SEG.selling.desire), ctx);
+    if (ctx.chk.eng) text = fill(pick(SEG.selling.invite), ctx) + '\n\n' + text;
+    if (ctx.chk.trust) text = fill(pick(SEG.selling.trust), ctx) + '\n\n' + text;
+    if (lines.length) text = lines.join(' · ') + '\n\n' + text;
+    return text;
+  }
+
+  function stripEmoji(s) {
+    return s.replace(/[\u{1F300}-\u{1F9FF}]|[\u2600-\u26FF]|[\u2700-\u27BF]/gu, '').replace(/\s{2,}/g, ' ').trim();
+  }
+
+  function makeHeadlines(ctx, n) {
+    var out = [];
+    for (var i = 0; i < n; i++) out.push(fill(HEADLINE_POOL[(i * 7) % HEADLINE_POOL.length], ctx));
+    return out;
+  }
+
+  function makeOpeners(ctx, n) {
+    var t = segTable(ctx.postType === 'informational' ? 'expert' : ctx.postType);
+    return pickMany(t.hook, Math.min(n, t.hook.length)).map(function (x) { return fill(x, ctx); });
+  }
+
+  function makeAltCta(ctx, n) {
+    return pickMany(CTA_POOL, Math.min(n, CTA_POOL.length)).map(function (x) { return fill(x, ctx); });
+  }
+
+  function makeStories(ctx) {
+    return pickMany(STORIES_POOL, 5).map(function (x) { return fill(x, ctx); });
+  }
+
+  function makeHashtags(ctx) {
+    var base = (ctx.keywords + ' ' + ctx.niche + ' ' + ctx.product).toLowerCase().split(/[\s,;]+/).filter(Boolean);
+    var tags = [];
+    for (var i = 0; i < base.length && tags.length < 6; i++) {
+      var w = base[i].replace(/[^a-zA-Zа-яА-ЯёЁ0-9_]/g, '');
+      if (w.length > 2) tags.push('#' + w.slice(0, 28));
+    }
+    var extra = ['#контент', '#smm', '#маркетинг', '#блог', '#продвижение', '#соцсети', '#запуск', '#оффер', '#аудитория', '#бренд'];
+    while (tags.length < 10) tags.push(extra[tags.length % extra.length]);
+    return tags.slice(0, 10);
+  }
+
+  function makeBanners(ctx) {
+    return pickMany(BANNER_PHRASES, 5).map(function (x) { return fill(x, ctx); });
+  }
+
+  function makeReels(ctx) {
+    return REELS_IDEAS.map(function (x) { return fill(x, ctx); });
+  }
+
+  function shortenText(s) {
+    var p = s.split('\n\n');
+    return p.slice(0, Math.max(2, Math.floor(p.length / 2))).join('\n\n');
+  }
+
+  function lengthenText(s, ctx) {
+    return s + '\n\n' + fill(pick(SEG.selling.val), ctx) + '\n\n' + fill(pick(SEG.selling.insight), ctx);
+  }
+
+  function generatePack(ctx, opts) {
+    opts = opts || {};
+    var main = composeVariant(ctx, opts.seed || 0);
+    main = applyModifiers(main, ctx, opts.mode);
+    if (resolveEmoji(ctx)) main = main.replace(/([.!?])\s/g, '$1' + emojiFor(ctx, 1) + ' ');
+    var v2 = applyModifiers(composeVariant(ctx, 1), ctx, opts.mode);
+    var v3 = applyModifiers(composeVariant(ctx, 2), ctx, opts.mode);
+    var premium = applyModifiers(composeVariant(ctx, 3), ctx, 'premium');
+    var short = shortenText(main);
+    var noEmoji = stripEmoji(main);
+    var platformNote = PLATFORM_HINTS[ctx.platform] || PLATFORM_HINTS.universal;
+    return {
+      title: fill(pick(HEADLINE_POOL), ctx),
+      main: main,
+      v2: v2,
+      v3: v3,
+      premium: premium,
+      short: short,
+      noEmoji: noEmoji,
+      paragraphs: main,
+      withEmoji: resolveEmoji(ctx) ? main : main + emojiFor(ctx, 0),
+      altTitles: makeHeadlines(ctx, 3),
+      openers: makeOpeners(ctx, 3),
+      altCtas: makeAltCta(ctx, 3),
+      stories: makeStories(ctx),
+      hashtags: makeHashtags(ctx),
+      banners: makeBanners(ctx),
+      reels: makeReels(ctx),
+      platformNote: platformNote,
+      ctx: ctx
+    };
+  }
+
+  function toast(msg) {
+    var box = document.getElementById('toast-container');
+    if (!box) return;
+    var t = document.createElement('div');
+    t.className = 'toast';
+    t.textContent = msg;
+    box.appendChild(t);
+    setTimeout(function () { t.remove(); }, 2600);
+  }
+
+  function saveStorage() {
+    try {
+      var data = {
+        niche: document.getElementById('f_niche').value,
+        product: document.getElementById('f_product').value,
+        audience: document.getElementById('f_audience').value,
+        platform: document.getElementById('f_platform').value,
+        postType: document.getElementById('f_type').value,
+        tone: document.getElementById('f_tone').value,
+        goal: document.getElementById('f_goal').value,
+        usp: document.getElementById('f_usp').value,
+        pain: document.getElementById('f_pain').value,
+        cta: document.getElementById('f_cta').value,
+        length: document.getElementById('f_length').value,
+        keywords: document.getElementById('f_keywords').value,
+        extra: document.getElementById('f_extra').value,
+        format: document.getElementById('f_format').value,
+        structure: currentStructure,
+        theme: document.documentElement.getAttribute('data-theme') || 'light',
+        lastPack: lastPack,
+        checks: {}
+      };
+      ['c_emoji','c_noemoji','c_expensive','c_human','c_benefit','c_offer','c_softcta','c_creative','c_sales','c_eng','c_trust'].forEach(function (id) {
+        var el = document.getElementById(id);
+        data.checks[id] = el ? el.checked : false;
+      });
+      ['tog_emoji','tog_premium','tog_human','tog_offer','tog_alive','tog_soft'].forEach(function (id) {
+        var el = document.getElementById(id);
+        data.checks[id] = el ? el.checked : false;
+      });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch (e) {}
+  }
+
+  function loadStorage() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      var data = JSON.parse(raw);
+      function setv(id, v) { var el = document.getElementById(id); if (el && v != null) el.value = v; }
+      setv('f_niche', data.niche);
+      setv('f_product', data.product);
+      setv('f_audience', data.audience);
+      setv('f_platform', data.platform);
+      setv('f_type', data.postType);
+      setv('f_tone', data.tone);
+      setv('f_goal', data.goal);
+      setv('f_usp', data.usp);
+      setv('f_pain', data.pain);
+      setv('f_cta', data.cta);
+      setv('f_length', data.length);
+      setv('f_keywords', data.keywords);
+      setv('f_extra', data.extra);
+      setv('f_format', data.format);
+      if (data.structure) currentStructure = data.structure;
+      syncStructureChips();
+      if (data.theme) {
+        document.documentElement.setAttribute('data-theme', data.theme);
+        updateThemeBtn();
+      }
+      if (data.checks) {
+        Object.keys(data.checks).forEach(function (k) {
+          var el = document.getElementById(k);
+          if (el) el.checked = !!data.checks[k];
+        });
+      }
+      if (data.lastPack) {
+        lastPack = data.lastPack;
+        renderResult(lastPack, false);
+      }
+    } catch (e) {}
+  }
+
+  function updateThemeBtn() {
+    var b = document.getElementById('themeToggle');
+    if (!b) return;
+    var d = document.documentElement.getAttribute('data-theme') === 'dark';
+    b.textContent = d ? 'Тема: тёмная' : 'Тема: светлая';
+  }
+
+  function renderResult(pack, scroll) {
+    lastPack = pack;
+    var wrap = document.getElementById('resultWrap');
+    var tabs = document.getElementById('resultTabs');
+    var panels = document.getElementById('resultPanels');
+    if (!wrap || !tabs || !panels) return;
+    wrap.classList.add('visible');
+    wrap.style.display = 'block';
+    function esc(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+    function block(h, body) {
+      return '<div class="out-block"><h4>' + esc(h) + '</h4><div class="body">' + esc(body || '') + '</div></div>';
+    }
+    var tabDefs = [
+      { id: 't1', label: 'Основной вариант', html: block('Заголовок', pack.title) + block('Текст', pack.main) + block('Платформа', pack.platformNote) },
+      { id: 't2', label: 'Вариант 2', html: block('Текст', pack.v2) },
+      { id: 't3', label: 'Вариант 3', html: block('Текст', pack.v3) },
+      { id: 't4', label: 'Без эмодзи', html: block('Текст', pack.noEmoji) },
+      { id: 't5', label: 'Премиальный', html: block('Текст', pack.premium) },
+      { id: 't6', label: 'Короткий', html: block('Текст', pack.short) },
+      { id: 't7', label: 'Сторис', html: block('5 идей', pack.stories.join('\n')) },
+      { id: 't8', label: 'Хэштеги', html: block('10 хэштегов', pack.hashtags.join(' ')) }
+    ];
+    var extra =
+      block('Призыв к действию (основной)', fill(pick(CTA_POOL), pack.ctx)) +
+      block('Вариант с абзацами', pack.paragraphs) +
+      block('С эмодзи', pack.withEmoji) +
+      block('3 цепляющих заголовка', pack.altTitles.join('\n')) +
+      block('3 варианта первого абзаца', pack.openers.join('\n\n')) +
+      block('3 варианта CTA', pack.altCtas.join('\n')) +
+      block('5 фраз для баннера', pack.banners.join('\n')) +
+      block('3 идеи Reels / Shorts', pack.reels.join('\n'));
+    tabDefs[0].html += extra;
+    tabs.innerHTML = '';
+    panels.innerHTML = '';
+    tabDefs.forEach(function (td, idx) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'tab' + (idx === 0 ? ' active' : '');
+      btn.textContent = td.label;
+      btn.dataset.tab = td.id;
+      tabs.appendChild(btn);
+      var div = document.createElement('div');
+      div.className = 'tab-panel' + (idx === 0 ? ' active' : '');
+      div.id = td.id;
+      div.innerHTML = td.html;
+      panels.appendChild(div);
+    });
+    tabs.querySelectorAll('.tab').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        tabs.querySelectorAll('.tab').forEach(function (b) { b.classList.remove('active'); });
+        panels.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.remove('active'); });
+        btn.classList.add('active');
+        var p = document.getElementById(btn.dataset.tab);
+        if (p) p.classList.add('active');
+      });
+    });
+    saveStorage();
+    if (scroll) document.getElementById('resultWrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function runGenerate(scroll) {
+    var ctx = readCtx();
+    var pack = generatePack(ctx, {});
+    renderResult(pack, scroll !== false);
+  }
+
+  function copyText(t) {
+    if (!t) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(t).then(function () { toast('Текст скопирован'); });
+    } else {
+      var ta = document.createElement('textarea');
+      ta.value = t;
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); toast('Текст скопирован'); } catch (e) {}
+      ta.remove();
+    }
+  }
+
+  function downloadFile(name, content, mime) {
+    var blob = new Blob([content], { type: mime || 'text/plain;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast('Файл скачан');
+  }
+
+  function fillFormPreset(p) {
+    Object.keys(p).forEach(function (k) {
+      var el = document.getElementById('f_' + k);
+      if (el) el.value = p[k];
+    });
+    saveStorage();
+  }
+
+  function insertSample() {
+    fillFormPreset({
+      niche: 'Косметология и уход',
+      product: 'Консультация и домашний уход под тип кожи',
+      audience: 'Девушки и мужчины 25–45, ценят спокойную экспертизу без запугивания',
+      goal: 'Запись на диагностику и рост доверия',
+      usp: 'Протокол без перегруза, честные ожидания по срокам',
+      pain: 'Раздражение после агрессивных процедур, пятнистый тон, страх «перебора»',
+      cta: 'Напишите «кожа» — пришлём чек-лист подготовки',
+      keywords: 'кожа, уход, косметолог, спокойно',
+      platform: 'instagram',
+      extra: 'Тон тёплый, без медицинских обещаний'
+    });
+    document.getElementById('f_type').value = 'expert';
+    document.getElementById('f_tone').value = 'calm';
+    toast('Пример вставлен');
+    saveStorage();
+  }
+
+  function syncStructureChips() {
+    var stBox = document.getElementById('structureChips');
+    if (!stBox) return;
+    stBox.querySelectorAll('.chip').forEach(function (x) {
+      x.classList.toggle('active', x.getAttribute('data-structure') === currentStructure);
+    });
+  }
+
+  function clearForm() {
+    document.querySelectorAll('#postForm input[type=text], #postForm textarea, #postForm select').forEach(function (el) {
+      if (el.id === 'f_platform') el.value = 'instagram';
+      else if (el.id === 'f_type') el.value = 'selling';
+      else if (el.id === 'f_tone') el.value = 'friendly';
+      else if (el.id === 'f_length') el.value = 'medium';
+      else if (el.id === 'f_format') el.value = 'paragraphs';
+      else el.value = '';
+    });
+    document.querySelectorAll('#postForm input[type=checkbox]').forEach(function (el) { el.checked = false; });
+    document.getElementById('tog_emoji').checked = true;
+    currentStructure = 'default';
+    syncStructureChips();
+    lastPack = null;
+    var wrap = document.getElementById('resultWrap');
+    if (wrap) { wrap.classList.remove('visible'); wrap.style.display = 'none'; }
+    toast('Форма очищена');
+    saveStorage();
+  }
+
+  function bind() {
+    var selType = document.getElementById('f_type');
+    var selTone = document.getElementById('f_tone');
+    var selFormat = document.getElementById('f_format');
+    POST_TYPE_OPTIONS.forEach(function (o) {
+      var opt = document.createElement('option');
+      opt.value = o.value;
+      opt.textContent = o.label;
+      selType.appendChild(opt);
+    });
+    TONE_OPTIONS.forEach(function (o) {
+      var opt = document.createElement('option');
+      opt.value = o.value;
+      opt.textContent = o.label;
+      selTone.appendChild(opt);
+    });
+    FORMAT_OPTIONS.forEach(function (o) {
+      var opt = document.createElement('option');
+      opt.value = o.value;
+      opt.textContent = o.label;
+      selFormat.appendChild(opt);
+    });
+
+    function renderNicheChips(containerId) {
+      var c = document.getElementById(containerId);
+      if (!c) return;
+      NICHE_LIST.forEach(function (n) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'chip';
+        b.textContent = n.label;
+        b.addEventListener('click', function () {
+          var pr = NICHE_PRESETS[n.id];
+          if (!pr) return;
+          fillFormPreset({
+            niche: pr.niche,
+            product: pr.product,
+            audience: pr.audience,
+            goal: pr.goal,
+            usp: pr.usp,
+            pain: pr.pain,
+            cta: pr.cta,
+            keywords: pr.keywords,
+            platform: pr.platform || 'instagram'
+          });
+          document.getElementById('f_type').value = pr.postType || 'selling';
+          document.getElementById('f_tone').value = pr.tone || 'friendly';
+          toast('Ниша подставлена');
+          document.getElementById('generator').scrollIntoView({ behavior: 'smooth' });
+        });
+        c.appendChild(b);
+      });
+    }
+    renderNicheChips('nicheChips');
+    renderNicheChips('nicheChipsGen');
+
+    var goalBox = document.getElementById('goalChips');
+    GOAL_CHIPS.forEach(function (g) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'chip';
+      b.textContent = g.text;
+      b.addEventListener('click', function () {
+        document.getElementById('f_goal').value = g.goal;
+        toast('Цель подставлена');
+        saveStorage();
+      });
+      goalBox.appendChild(b);
+    });
+
+    var stBox = document.getElementById('structureChips');
+    QUICK_STRUCTURES.forEach(function (s) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'chip' + (s.id === currentStructure ? ' active' : '');
+      b.textContent = s.label;
+      b.dataset.structure = s.id;
+      b.addEventListener('click', function () {
+        currentStructure = s.id;
+        syncStructureChips();
+        toast('Структура: ' + s.label);
+        saveStorage();
+      });
+      stBox.appendChild(b);
+    });
+
+    document.querySelectorAll('[data-quick]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var k = b.getAttribute('data-quick');
+        var pr = QUICK_PRESETS[k];
+        if (pr) {
+          fillFormPreset(pr);
+          document.getElementById('f_type').value = pr.postType;
+          document.getElementById('f_tone').value = pr.tone;
+          toast('Быстрый пример загружен');
+        }
+      });
+    });
+
+    document.getElementById('btnGen').addEventListener('click', function () { runGenerate(true); });
+    document.getElementById('btnRegen').addEventListener('click', function () { runGenerate(true); });
+    document.getElementById('btnClear').addEventListener('click', clearForm);
+    document.getElementById('btnSample').addEventListener('click', insertSample);
+    document.getElementById('heroDemoBtn').addEventListener('click', function () {
+      document.getElementById('generator').scrollIntoView({ behavior: 'smooth' });
+    });
+    document.getElementById('btnTop').addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    document.getElementById('btnCopy').addEventListener('click', function () {
+      if (!lastPack) { toast('Сначала сгенерируйте'); return; }
+      copyText(lastPack.title + '\n\n' + lastPack.main);
+    });
+    document.getElementById('btnCopyAll').addEventListener('click', function () {
+      if (!lastPack) { toast('Сначала сгенерируйте'); return; }
+      var t = JSON.stringify(lastPack, null, 2);
+      copyText(t);
+    });
+    document.getElementById('btnTxt').addEventListener('click', function () {
+      if (!lastPack) { toast('Сначала сгенерируйте'); return; }
+      var p = lastPack;
+      var txt = [
+        'ЗАГОЛОВОК', p.title, '',
+        'ОСНОВНОЙ ТЕКСТ', p.main, '',
+        'ВАРИАНТ 2', p.v2, '',
+        'ВАРИАНТ 3', p.v3, '',
+        'БЕЗ ЭМОДЗИ', p.noEmoji, '',
+        'ПРЕМИАЛЬНЫЙ', p.premium, '',
+        'КОРОТКИЙ', p.short, '',
+        'СТОРИС', p.stories.join('\n'), '',
+        'ХЭШТЕГИ', p.hashtags.join(' '), '',
+        'ЗАГОЛОВКИ (3)', p.altTitles.join('\n'), '',
+        'ПЕРВЫЕ АБЗАЦЫ (3)', p.openers.join('\n\n'), '',
+        'CTA (3)', p.altCtas.join('\n'), '',
+        'БАННЕРЫ', p.banners.join('\n'), '',
+        'REELS / SHORTS', p.reels.join('\n')
+      ].join('\n');
+      downloadFile('postcraft-post.txt', txt, 'text/plain;charset=utf-8');
+    });
+    document.getElementById('btnJson').addEventListener('click', function () {
+      if (!lastPack) { toast('Сначала сгенерируйте'); return; }
+      downloadFile('postcraft-post.json', JSON.stringify(lastPack, null, 2), 'application/json');
+    });
+    document.getElementById('btnMore2').addEventListener('click', function () {
+      if (!lastPack) { runGenerate(true); return; }
+      var ctx = readCtx();
+      lastPack.v2 = applyModifiers(composeVariant(ctx, 11), ctx, {});
+      lastPack.v3 = applyModifiers(composeVariant(ctx, 17), ctx, {});
+      renderResult(lastPack, true);
+      toast('Добавлены новые варианты');
+    });
+    document.getElementById('btnShorter').addEventListener('click', function () {
+      if (!lastPack) return;
+      lastPack.main = shortenText(lastPack.main);
+      renderResult(lastPack, false);
+      toast('Текст короче');
+    });
+    document.getElementById('btnLonger').addEventListener('click', function () {
+      if (!lastPack) return;
+      lastPack.main = lengthenText(lastPack.main, lastPack.ctx);
+      renderResult(lastPack, false);
+      toast('Текст длиннее');
+    });
+    document.getElementById('btnRicher').addEventListener('click', function () {
+      if (!lastPack) return;
+      lastPack.main = applyModifiers(lastPack.main, lastPack.ctx, 'premium');
+      renderResult(lastPack, false);
+      toast('Тон дороже');
+    });
+    document.getElementById('btnSofter').addEventListener('click', function () {
+      if (!lastPack) return;
+      lastPack.main = applyModifiers(lastPack.main, lastPack.ctx, 'soft');
+      renderResult(lastPack, false);
+      toast('Тон мягче');
+    });
+    document.getElementById('btnLivelier').addEventListener('click', function () {
+      if (!lastPack) return;
+      lastPack.main = applyModifiers(lastPack.main, lastPack.ctx, 'alive');
+      renderResult(lastPack, false);
+      toast('Текст живее');
+    });
+
+    document.getElementById('themeToggle').addEventListener('click', function () {
+      var cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
+      updateThemeBtn();
+      saveStorage();
+    });
+
+    ['f_niche','f_product','f_audience','f_platform','f_type','f_tone','f_goal','f_usp','f_pain','f_cta','f_length','f_keywords','f_extra','f_format'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.addEventListener('input', saveStorage);
+      if (el) el.addEventListener('change', saveStorage);
+    });
+    document.querySelectorAll('#postForm input[type=checkbox], .toggle-row input').forEach(function (el) {
+      el.addEventListener('change', saveStorage);
+    });
+
+    syncStructureChips();
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    bind();
+    loadStorage();
+    updateThemeBtn();
+    document.querySelectorAll('.reveal').forEach(function (el, i) {
+      el.style.animationDelay = (i * 0.06) + 's';
+    });
+  });
+})();
+  </script>
+</body>
+</html>
