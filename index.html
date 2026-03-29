@@ -1337,8 +1337,9 @@
     var product = val('f_product') || 'ваш продукт';
     var audience = val('f_audience') || 'ваша аудитория';
     var platform = val('f_platform') || 'universal';
-    var postType = val('f_type') || 'selling';
-    var tone = val('f_tone') || 'universal';
+    var postType = normalizePostTypeValue(val('f_type'));
+    var toneRaw = val('f_tone');
+    var tone = toneRaw ? normalizeToneValue(toneRaw) : 'universal';
     var goal = val('f_goal') || 'сделать следующий шаг проще';
     var usp = val('f_usp') || 'ваше сильное отличие';
     var pain = val('f_pain') || 'типичную боль аудитории';
@@ -1809,8 +1810,10 @@
       setv('f_product', data.product);
       setv('f_audience', data.audience);
       setv('f_platform', data.platform);
-      setv('f_type', data.postType);
-      setv('f_tone', data.tone);
+      var ft = document.getElementById('f_type');
+      if (ft && data.postType != null && data.postType !== '') ft.value = normalizePostTypeValue(data.postType);
+      var ftn = document.getElementById('f_tone');
+      if (ftn && data.tone != null && data.tone !== '') ftn.value = normalizeToneValue(data.tone);
       setv('f_goal', data.goal);
       setv('f_usp', data.usp);
       setv('f_pain', data.pain);
@@ -1937,12 +1940,31 @@
     toast('Файл скачан');
   }
 
+  /** id полей формы: ключ пресета → id элемента (postType в форме = f_type, не f_postType). */
   function fillFormPreset(p) {
+    var idMap = { postType: 'f_type' };
     Object.keys(p).forEach(function (k) {
-      var el = document.getElementById('f_' + k);
+      var id = idMap[k] || ('f_' + k);
+      var el = document.getElementById(id);
       if (el) el.value = p[k];
     });
     saveStorage();
+  }
+
+  function normalizePostTypeValue(v) {
+    var s = String(v || '').trim();
+    for (var i = 0; i < POST_TYPE_OPTIONS.length; i++) {
+      if (POST_TYPE_OPTIONS[i].value === s) return s;
+    }
+    return 'selling';
+  }
+
+  function normalizeToneValue(v) {
+    var s = String(v || '').trim();
+    for (var j = 0; j < TONE_OPTIONS.length; j++) {
+      if (TONE_OPTIONS[j].value === s) return s;
+    }
+    return 'friendly';
   }
 
   function insertSample() {
@@ -1956,12 +1978,11 @@
       cta: 'Напишите «кожа» — пришлём чек-лист подготовки',
       keywords: 'кожа, уход, косметолог, спокойно',
       platform: 'instagram',
+      postType: 'expert',
+      tone: 'calm',
       extra: 'Тон тёплый, без медицинских обещаний'
     });
-    document.getElementById('f_type').value = 'expert';
-    document.getElementById('f_tone').value = 'calm';
     toast('Пример вставлен');
-    saveStorage();
   }
 
   function syncStructureChips() {
@@ -2035,10 +2056,10 @@
             pain: pr.pain,
             cta: pr.cta,
             keywords: pr.keywords,
-            platform: pr.platform || 'instagram'
+            platform: pr.platform || 'instagram',
+            postType: normalizePostTypeValue(pr.postType),
+            tone: pr.tone || 'friendly'
           });
-          document.getElementById('f_type').value = pr.postType || 'selling';
-          document.getElementById('f_tone').value = pr.tone || 'friendly';
           toast('Ниша подставлена');
           document.getElementById('generator').scrollIntoView({ behavior: 'smooth' });
         });
@@ -2083,9 +2104,19 @@
         var k = b.getAttribute('data-quick');
         var pr = QUICK_PRESETS[k];
         if (pr) {
-          fillFormPreset(pr);
-          document.getElementById('f_type').value = pr.postType;
-          document.getElementById('f_tone').value = pr.tone;
+          fillFormPreset({
+            niche: pr.niche,
+            product: pr.product,
+            audience: pr.audience,
+            goal: pr.goal,
+            usp: pr.usp,
+            pain: pr.pain,
+            cta: pr.cta,
+            keywords: pr.keywords,
+            platform: pr.platform,
+            postType: normalizePostTypeValue(pr.postType),
+            tone: pr.tone || 'friendly'
+          });
           toast('Быстрый пример загружен');
         }
       });
