@@ -12,8 +12,9 @@
 
     ГДЕ МЕНЯТЬ СТИЛИ: блок <style> ниже — переменные :root и [data-theme="dark"].
 
-    ГДЕ МЕНЯТЬ ШАБЛОНЫ ГЕНЕРАЦИИ: в <script> объекты BLOCK_ORDERS, POST_TYPE_TEMPLATES,
-    TONE_MODIFIERS, PLATFORM_HINTS, buildPostFromTemplates(), applyModifiers().
+    ГДЕ МЕНЯТЬ ШАБЛОНЫ ГЕНЕРАЦИИ: в <script> объекты SEG, STRUCT_FLOW, ensurePostLength(),
+    TONE_MODIFIERS, PLATFORM_HINTS, composeVariant(), applyModifiers().
+    Длина поста: константы POST_MIN_CHARS (минимум) и POST_SOFT_MAX_CHARS (мягкий потолок).
 
     ГДЕ МЕНЯТЬ СПИСКИ: константы NICHE_LIST, NICHE_PRESETS, POST_TYPE_OPTIONS, TONE_OPTIONS,
     GOAL_CHIPS, FORMAT_OPTIONS, QUICK_STRUCTURES, HEADLINE_POOL, CTA_POOL, STORIES_POOL,
@@ -382,7 +383,7 @@
       <div id="generator" class="card reveal" style="box-shadow:var(--shadow);">
         <div class="section-head" style="margin-bottom:28px;">
           <h2 style="margin-bottom:8px;">Генератор постов</h2>
-          <p>Заполните поля — система соберёт смысловые блоки и даст несколько готовых вариантов</p>
+          <p>Заполните поля — система соберёт смысловые блоки и даст несколько готовых вариантов. Основные варианты текста формируются объёмом <strong>от 1000 до ~1500 символов</strong> (с пробелами).</p>
         </div>
 
         <p class="niche-bar-title">Быстрый выбор ниши (внутри генератора)</p>
@@ -534,6 +535,7 @@
    * 5) applyModifiers / applyFormat доформатировывают длину, списки, усиления.
    * 6) generatePack() собирает основной пост + альтернативы, сторис, хэштеги и т.д.
    * Плейсхолдеры в шаблонах: {{niche}}, {{product}}, {{audience}}, {{pain}}, {{usp}}, {{goal}}, {{cta}}, {{keywords}}
+   * Объём поста: ensurePostLength() доводит основной текст до ≥1000 знаков (цель ~1000–1500).
    */
 
   /* ---------- Конфиг: ниши и пресеты (правьте здесь список ниш) ---------- */
@@ -1326,6 +1328,58 @@
     return SEG[type] || SEG.selling;
   }
 
+  /* Минимальная длина поста (с пробелами) и мягкий верхний ориентир */
+  var POST_MIN_CHARS = 1000;
+  var POST_SOFT_MAX_CHARS = 1520;
+
+  /**
+   * Дополняет текст абзацами из пулов SEG, пока не достигнут минимум ~1000 знаков.
+   * До SOFT_MAX наращивает ещё 1–2 блока для «плотного» чтения в коридоре 1000–1500.
+   */
+  function ensurePostLength(text, ctx, salt) {
+    text = (text || '').trim();
+    var table = segTable(ctx.postType === 'informational' ? 'expert' : (ctx.postType === 'promo' ? 'selling' : ctx.postType));
+    var keys = ['ben', 'val', 'insight', 'trust', 'story', 'interest', 'desire', 'sol', 'pain', 'help', 'truth', 'myth', 'detail', 'for', 'trustline', 'scene', 'feel'];
+    var n = ((salt || 0) * 31 + text.length) % 10007;
+    var safety = 0;
+    function nextPara() {
+      var k = keys[n++ % keys.length];
+      var pool = table[k] || SEG.selling[k];
+      if (!pool || !pool.length) return '';
+      var tpl = pool[n % pool.length];
+      n += 17;
+      return fill(tpl, ctx).trim();
+    }
+    while (text.length < POST_MIN_CHARS && safety < 50) {
+      safety++;
+      var p = nextPara();
+      if (p.length < 20) continue;
+      text = text + (text ? '\n\n' : '') + p;
+    }
+    safety = 0;
+    while (text.length < POST_MIN_CHARS + 180 && text.length < POST_SOFT_MAX_CHARS - 80 && safety < 12) {
+      safety++;
+      var q = nextPara();
+      if (!q || text.length + q.length + 2 > POST_SOFT_MAX_CHARS + 120) break;
+      text = text + '\n\n' + q;
+    }
+    if (text.length > POST_SOFT_MAX_CHARS + 350) {
+      var parts = text.split('\n\n');
+      while (parts.join('\n\n').length > POST_SOFT_MAX_CHARS + 80 && parts.length > 5) parts.pop();
+      text = parts.join('\n\n');
+      if (text.length < POST_MIN_CHARS) {
+        safety = 0;
+        while (text.length < POST_MIN_CHARS && safety < 30) {
+          safety++;
+          var r = nextPara();
+          if (r.length < 20) continue;
+          text = text + '\n\n' + r;
+        }
+      }
+    }
+    return text;
+  }
+
   function composeVariant(ctx, seedOffset) {
     var table = segTable(ctx.postType === 'informational' ? 'expert' : (ctx.postType === 'promo' ? 'selling' : ctx.postType));
     var flow = flowFor(ctx);
@@ -1342,7 +1396,8 @@
     parts.push(ctaLine);
     var body = parts.join('\n\n');
     if (ctx.extra) body += '\n\nP.S. ' + ctx.extra + emojiFor(ctx, 0);
-    return applyFormat(body, ctx);
+    body = applyFormat(body, ctx);
+    return ensurePostLength(body, ctx, (seedOffset || 0) * 97 + flow.length);
   }
 
   function applyFormat(text, ctx) {
@@ -1434,10 +1489,14 @@
     opts = opts || {};
     var main = composeVariant(ctx, opts.seed || 0);
     main = applyModifiers(main, ctx, opts.mode);
+    main = ensurePostLength(main, ctx, 11);
     if (resolveEmoji(ctx)) main = main.replace(/([.!?])\s/g, '$1' + emojiFor(ctx, 1) + ' ');
     var v2 = applyModifiers(composeVariant(ctx, 1), ctx, opts.mode);
+    v2 = ensurePostLength(v2, ctx, 22);
     var v3 = applyModifiers(composeVariant(ctx, 2), ctx, opts.mode);
+    v3 = ensurePostLength(v3, ctx, 33);
     var premium = applyModifiers(composeVariant(ctx, 3), ctx, 'premium');
+    premium = ensurePostLength(premium, ctx, 44);
     var short = shortenText(main);
     var noEmoji = stripEmoji(main);
     var platformNote = PLATFORM_HINTS[ctx.platform] || PLATFORM_HINTS.universal;
