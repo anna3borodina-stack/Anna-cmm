@@ -10,6 +10,7 @@
     СЕРВИС: одностраничный мини-лендинг + генератор постов для SMM-специалистов.
     КАК ПОЛЬЗОВАТЬСЯ: откройте файл в браузере → заполните форму в блоке «Генератор»
     → нажмите «Сгенерировать пост» → переключайте вкладки результата, копируйте или скачивайте.
+    Подробная инструкция на странице: якорь #instrukciya (шапка «Инструкция», блок перед нижним CTA).
 
     ГДЕ МЕНЯТЬ СТИЛИ: блок <style> ниже — переменные :root и [data-theme="dark"].
     Принципы текста: блок .quality-note в разметке + комментарий «СТИЛЬ ТЕКСТА» в <script>.
@@ -328,13 +329,48 @@
       text-decoration: none;
     }
     .skip-link:focus { left: 12px; top: 12px; outline: none; box-shadow: var(--shadow); }
+
+    .topbar-nav { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+    .topbar-link {
+      font-size: 0.9rem; font-weight: 600; color: var(--text-muted);
+      text-decoration: none; border-bottom: 1px solid transparent;
+    }
+    .topbar-link:hover { color: var(--accent); border-bottom-color: var(--accent-soft); }
+
+    #instrukciya { scroll-margin-top: 88px; }
+    .instruction-card { text-align: left; }
+    .instruction-card > p { color: var(--text-muted); margin: 0 0 14px; font-size: 0.95rem; }
+    .instr-part {
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 14px 18px; margin-bottom: 10px; background: var(--bg);
+    }
+    .instr-part summary {
+      font-weight: 600; cursor: pointer; color: var(--text);
+      list-style-position: outside; padding: 4px 0;
+    }
+    .instr-part[open] summary { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+    .instr-part ul { margin: 0; padding-left: 1.25em; color: var(--text-muted); }
+    .instr-part li { margin-bottom: 8px; }
+    .instr-part li:last-child { margin-bottom: 0; }
+    .instr-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 10px 0 0; }
+    .instr-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; color: var(--text); }
+    .instr-table th, .instr-table td {
+      border: 1px solid var(--border); padding: 10px 12px; text-align: left; vertical-align: top;
+    }
+    .instr-table th { background: color-mix(in srgb, var(--accent-soft) 65%, var(--bg-card)); width: 30%; min-width: 140px; }
   </style>
 </head>
 <body>
   <a class="skip-link" href="#generator">Перейти к генератору</a>
   <header class="topbar">
     <div class="wrap topbar-inner">
-      <div class="logo">PostCraft · генератор для SMM</div>
+      <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+        <div class="logo">PostCraft · генератор для SMM</div>
+        <nav class="topbar-nav" aria-label="Разделы страницы">
+          <a href="#generator" class="topbar-link">Генератор</a>
+          <a href="#instrukciya" class="topbar-link">Инструкция</a>
+        </nav>
+      </div>
       <button type="button" class="theme-btn js-theme-toggle" id="themeToggle">Тёмная тема</button>
     </div>
   </header>
@@ -349,6 +385,7 @@
           <div style="margin-top:24px;display:flex;flex-wrap:wrap;gap:12px;">
             <a href="#generator" class="btn btn-primary">Сгенерировать пост</a>
             <button type="button" class="btn btn-ghost" id="heroDemoBtn">Посмотреть демо</button>
+            <a href="#instrukciya" class="btn btn-ghost">Инструкция</a>
           </div>
           <div class="hero-badges">
             <span class="badge">под любую нишу</span>
@@ -466,6 +503,7 @@
             <li>Удобно читать с телефона: <strong>короткие предложения</strong>, нормальные связки между мыслями, без лишней воды и «умных» слов ради вида.</li>
             <li>Генератор даёт основу — <strong>прогоните глазами и подправьте под ваш голос</strong>; включите «проще и человечнее» в переключателях или в чекбоксах, если нужен ещё более разговорный тон.</li>
             <li>Система сама <strong>режет повторы абзацев</strong>, подмечает типовые штампы и чередует формулировки — текст получается ровнее и спокойнее для ленты.</li>
+            <li>В «Дополнительные пожелания» пишите <strong>по-человечески</strong>, без строк вроде «Контекст: …» или «Ключевые акценты: …» — иначе это попадёт в текст и будет выглядеть как черновик ТЗ.</li>
           </ul>
         </div>
 
@@ -583,6 +621,103 @@
       </div>
     </section>
 
+    <section id="instrukciya" class="alt" aria-labelledby="instr-title">
+      <div class="wrap">
+      <div class="section-head" style="margin-bottom:28px;">
+        <h2 id="instr-title">Инструкция: как пользоваться</h2>
+        <p>Всё работает в браузере через файл <strong>index.html</strong>, без интернета. Ниже — по шагам.</p>
+      </div>
+      <div class="card instruction-card reveal">
+        <details class="instr-part">
+          <summary>Как открыть</summary>
+          <ol style="margin:0;padding-left:1.25em;color:var(--text-muted);line-height:1.6;">
+            <li>Откройте <strong>index.html</strong> двойным щелчком или через «Открыть с помощью» → Chrome, Edge, Firefox и т.п.</li>
+            <li>Интернет для генерации <strong>не нужен</strong> — расчёт идёт на вашем компьютере.</li>
+          </ol>
+        </details>
+        <details class="instr-part">
+          <summary>Тема оформления (светлая / тёмная)</summary>
+          <ul>
+            <li>Надпись на кнопке — это то, что <strong>включится после клика</strong> («Тёмная тема» / «Светлая тема»).</li>
+            <li>Кнопки: в <strong>шапке</strong>, у блока <strong>«Генератор постов»</strong> и в <strong>футере</strong>.</li>
+            <li>Выбор сохраняется в браузере до следующего открытия файла.</li>
+          </ul>
+        </details>
+        <details class="instr-part">
+          <summary>Быстрый старт без ручного заполнения</summary>
+          <ul>
+            <li><strong>Примеры ниш</strong> (на странице и внутри генератора) — клик по нише подставляет пример полей, тип поста и тон.</li>
+            <li><strong>Быстрый старт</strong> — три кнопки: эксперт, магазин, услуги.</li>
+            <li><strong>Вставить пример</strong> — демо-данные в форму (косметология, экспертный тон).</li>
+          </ul>
+          <p style="margin:12px 0 0;color:var(--text-muted);font-size:0.92rem;">Потом отредактируйте поля под свой проект.</p>
+        </details>
+        <details class="instr-part">
+          <summary>Поля формы — что за что</summary>
+          <p style="margin:0 0 10px;color:var(--text-muted);font-size:0.92rem;"><strong>Тип поста</strong> — только выбор из списка, вручную ничего вводить не нужно.</p>
+          <div class="instr-table-wrap">
+            <table class="instr-table">
+              <thead>
+                <tr><th>Поле</th><th>Зачем</th></tr>
+              </thead>
+              <tbody>
+                <tr><th scope="row">Ниша</th><td>Сфера: бьюти, обучение, магазин и т.д.</td></tr>
+                <tr><th scope="row">Что продаём / продвигаем</th><td>Продукт, услуга, оффер.</td></tr>
+                <tr><th scope="row">Целевая аудитория</th><td>Кто читает, чем живёт.</td></tr>
+                <tr><th scope="row">Платформа</th><td>Instagram, Telegram, VK или универсально — в результате будет подсказка под площадку.</td></tr>
+                <tr><th scope="row">Тип поста</th><td>Продающий, экспертный, кейс, анонс и др. — из выпадающего списка.</td></tr>
+                <tr><th scope="row">Тон текста</th><td>Мягкий, экспертный, премиальный и другие варианты.</td></tr>
+                <tr><th scope="row">Цель поста</th><td>Заявки, прогрев, знакомство… Можно использовать <strong>быстрые цели</strong> над формой.</td></tr>
+                <tr><th scope="row">УТП, боли, CTA, ключевые слова</th><td>Чем полнее — тем точнее черновик.</td></tr>
+                <tr><th scope="row">Объём и формат</th><td>Короткий/длинный пост, список, история, мини-статья и т.д.</td></tr>
+                <tr><th scope="row">Доп. пожелания</th><td>Например: без штампов, проще языком.</td></tr>
+                <tr><th scope="row">Чекбоксы и переключатели</th><td>Эмодзи, «человечнее», сильный оффер и т.п.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p style="margin:14px 0 0;color:var(--text-muted);font-size:0.92rem;"><strong>Быстрые структуры</strong> (AIDA, PAS, проблема → решение…) задают порядок смысловых блоков в тексте.</p>
+        </details>
+        <details class="instr-part">
+          <summary>Генерация и результат</summary>
+          <ol style="margin:0;padding-left:1.25em;color:var(--text-muted);line-height:1.6;">
+            <li>Нажмите <strong>«Сгенерировать пост»</strong>.</li>
+            <li>Ниже появятся <strong>вкладки</strong>: основной текст, варианты 2–3, без эмодзи, премиальный, короткий, сторис, хэштеги. На первой вкладке — также дополнительные блоки (заголовки, входы, CTA, идеи для Reels).</li>
+            <li>Основной текст обычно <strong>около 1000–1500 символов</strong> — это черновик; при необходимости отредактируйте под голос бренда.</li>
+          </ol>
+        </details>
+        <details class="instr-part">
+          <summary>Кнопки под формой</summary>
+          <ul>
+            <li><strong>Очистить форму</strong> — сброс полей, результат скрывается.</li>
+            <li><strong>Вставить пример</strong> — демо в поля.</li>
+            <li><strong>Скопировать текст</strong> — заголовок + основной текст.</li>
+            <li><strong>Скопировать все варианты</strong> — пакет в буфер (JSON).</li>
+            <li><strong>Скачать .txt / .json</strong> — файл на компьютер.</li>
+            <li><strong>Ещё 2 варианта</strong> — новые второй и третий варианты.</li>
+            <li><strong>Короче / Длиннее</strong>, <strong>Дороже / Мягче / Живее</strong> — правки основного текста.</li>
+            <li><strong>Создать заново</strong> — полная перегенерация с теми же полями.</li>
+          </ul>
+        </details>
+        <details class="instr-part">
+          <summary>Навигация и доступность</summary>
+          <ul>
+            <li>Кнопки <strong>«Сгенерировать пост»</strong> и <strong>«Открыть генератор»</strong> ведут к блоку генератора.</li>
+            <li>Ссылка <strong>«Наверх»</strong> — в футере.</li>
+            <li>В начале страницы при нажатии <kbd style="border:1px solid var(--border);padding:2px 6px;border-radius:4px;">Tab</kbd> появляется переход <strong>«Перейти к генератору»</strong>.</li>
+          </ul>
+        </details>
+        <details class="instr-part">
+          <summary>Важно понимать</summary>
+          <ul>
+            <li>Это <strong>шаблонный генератор</strong> в браузере, не нейросеть: текст стоит <strong>прочитать и при необходимости поправить</strong> под бренд и правила площадки.</li>
+            <li>Данные формы и последний результат хранятся <strong>локально в этом браузере</strong>; в другом браузере или на другом ПК настройки не подтянутся.</li>
+            <li>Цвета, списки ниш и шаблоны фраз меняются в коде файла <strong>index.html</strong> (подсказки в комментарии в начале файла и в блоках стилей и скрипта).</li>
+          </ul>
+        </details>
+      </div>
+      </div>
+    </section>
+
     <section>
       <div class="wrap" style="text-align:center;padding:48px 0;">
         <h2 style="margin-bottom:16px;">Попробуйте создать первый пост прямо сейчас</h2>
@@ -596,6 +731,7 @@
       <div>
         <strong style="color:var(--text);">PostCraft</strong> — локальный генератор черновиков постов для соцсетей. Работает в браузере, шаблоны и списки легко править в коде.
         <p style="margin:12px 0 0;">Подходит SMM-специалистам, экспертам, брендам, магазинам и сервисным бизнесам.</p>
+        <p style="margin:12px 0 0;"><a href="#instrukciya">Полная инструкция на странице</a></p>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-start;gap:10px;">
         <button type="button" class="btn btn-ghost btn-sm js-theme-toggle" id="themeToggleFooter" title="Переключить тему оформления">Тёмная тема</button>
@@ -886,14 +1022,14 @@
       'Это про устойчивость: {{niche}} любит последовательность.'
     ]),
     interest: T([
-      'Интересно? Смотрите, как {{product}} меняет ощущение от {{niche}}.',
+      'Интересно, как {{product}} меняет ощущение от {{niche}}?',
       'Зацепка: {{usp}} звучит скучно, пока не увидишь в цифрах/деталях.',
       'Внимание: {{pain}} можно снять без радикальных шагов.',
       'Любопытный факт: {{audience}} чаще выбирает спокойную уверенность.',
       'Мини-инсайт: {{niche}} растёт, когда меньше «шума» в коммуникации.',
       'Интрига мягкая: {{product}} раскрывается, когда читатель дочитает.',
       'Крючок без крика: {{goal}} ближе, чем кажется.',
-      'Смотрите иначе: {{usp}} — это про комфорт, не про статус.',
+      'Иначе {{usp}} — это про комфорт, не про статус.',
       'Заметили? {{pain}} почти всегда про нехватку структуры.',
       'Интерес держим на пользе: {{keywords}} работают в связке.'
     ]),
@@ -1492,15 +1628,43 @@
   }
 
   function polishText(text) {
-    return sanitizeCliches(dedupeParagraphs(text));
+    return humanizeFlow(sanitizeCliches(dedupeParagraphs(text)));
   }
 
+  /** Убирает «технические» абзацы и лишние слова в начале — пост сразу звучит по-человечески. */
+  function humanizeFlow(text) {
+    if (!text) return text;
+    var paras = text.split(/\n\n').map(function (p) { return p.trim(); }).filter(Boolean);
+    paras = paras.filter(function (p) {
+      if (/^контекст\s*:/i.test(p)) return false;
+      if (/^ключевые\s+акценты\s*:/i.test(p)) return false;
+      if (/место\s+для\s+уточняющего|уточняющего\s+вопроса\s+в\s+конце|место\s+для\s+вопроса\s+в\s+конце/i.test(p)) return false;
+      return true;
+    });
+    if (!paras.length) return text;
+    if (/^(смотрите|к\s+делу|по\s+факту|если\s+коротко|дальше\s*—\s*по\s+сути|вот\s+что\s+важно|без\s+лишних\s+слов|что\s+из\s+этого\s+следует)\.?$/i.test(paras[0])) paras.shift();
+    if (!paras.length) return text;
+    paras[0] = paras[0]
+      .replace(/^\s*(смотрите|к\s+делу)\s*[.,]\s*/i, '')
+      .replace(/^\s*(если\s+коротко|дальше\s*—\s*по\s+сути|вот\s+что\s+важно|по\s+факту|без\s+лишних\s+слов)\s*[.:]?\s*/i, '')
+      .trim();
+    /* Врезки «как из ТЗ» внутри абзаца */
+    paras = paras.map(function (p) {
+      return p
+        .replace(/\s*Контекст\s*:\s*[^.·\n]+(?:·|•)\s*[^.·\n]*\.?/gi, ' ')
+        .replace(/\s*Ключевые\s+акценты\s*:\s*[^\n.]+[.!?]?/gi, ' ')
+        .replace(/\s*[—–-]\s*Место\s+для\s+уточняющего[^.!?]*[.!?]?/gi, '')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+    }).filter(Boolean);
+    return paras.join('\n\n');
+  }
+
+  /* Только мягкие связки между серединой абзацев — не перед приветствием и не в начале поста */
   var BRIDGE_LINES = [
     'Дальше — по сути.',
     'Если коротко.',
     'Вот что важно.',
-    'К делу.',
-    'Смотрите.',
     'По факту.',
     'Без лишних слов.',
     'Что из этого следует.'
@@ -1531,7 +1695,8 @@
     var cta = parts[parts.length - 1];
     var out = [body[0]];
     for (var i = 1; i < body.length; i++) {
-      if (((seed + i * 11) % 10) < 4) out.push(pick(BRIDGE_LINES));
+      /* Связки только перед 3-м смысловым блоком и дальше — не ломаем первый абзац и вход в текст */
+      if (i >= 2 && ((seed + i * 11) % 10) < 3) out.push(pick(BRIDGE_LINES));
       out.push(body[i]);
       seed += 5;
     }
@@ -1653,9 +1818,11 @@
     if (mode === 'soft' || ctx.tog.soft || ctx.chk.softcta) lines.push(pick(TONE_MODIFIERS.soft));
     if (ctx.chk.benefit) text = text + '\n\n' + fill(pick(SEG.selling.ben), ctx);
     if (ctx.chk.sales) text = text + '\n\n' + fill(pick(SEG.selling.desire), ctx);
-    if (ctx.chk.eng) text = fill(pick(SEG.selling.invite), ctx) + '\n\n' + text;
-    if (ctx.chk.trust) text = fill(pick(SEG.selling.trust), ctx) + '\n\n' + text;
-    if (lines.length) text = lines.join(' · ') + '\n\n' + text;
+    /* Вовлечение и доверие — в конец, чтобы начало поста сразу было живым, без «надстроек» */
+    if (ctx.chk.eng) text = text + '\n\n' + fill(pick(SEG.selling.invite), ctx);
+    if (ctx.chk.trust) text = text + '\n\n' + fill(pick(SEG.selling.trust), ctx);
+    /* Пометки тона — в конец, не перед приветствием и первым абзацем */
+    if (lines.length) text = text + '\n\n' + lines.join(' · ');
     return text;
   }
 
