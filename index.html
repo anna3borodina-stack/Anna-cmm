@@ -107,8 +107,15 @@
       border: 1px solid var(--border); background: var(--bg-card);
       color: var(--text); padding: 10px 18px; border-radius: 999px;
       cursor: pointer; font-size: 0.9rem; transition: var(--transition);
+      font-weight: 600;
     }
     .theme-btn:hover { border-color: var(--accent); box-shadow: var(--shadow); }
+    .generator-head-row {
+      display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between;
+      gap: 16px; margin-bottom: 28px;
+    }
+    .generator-head-row .section-head { margin-bottom: 0; text-align: left; flex: 1; min-width: min(100%, 280px); }
+    .generator-head-row .theme-btn { flex-shrink: 0; margin-top: 4px; }
 
     /* Типографика и кнопки */
     h1, h2, h3 { line-height: 1.2; letter-spacing: -0.02em; margin: 0 0 0.5em; }
@@ -328,7 +335,7 @@
   <header class="topbar">
     <div class="wrap topbar-inner">
       <div class="logo">PostCraft · генератор для SMM</div>
-      <button type="button" class="theme-btn" id="themeToggle" aria-label="Сменить тему">Тема: светлая</button>
+      <button type="button" class="theme-btn js-theme-toggle" id="themeToggle">Тёмная тема</button>
     </div>
   </header>
 
@@ -444,9 +451,12 @@
 
     <section class="wrap" style="padding-top:24px;">
       <div id="generator" class="card reveal" style="box-shadow:var(--shadow);">
-        <div class="section-head" style="margin-bottom:28px;">
-          <h2 style="margin-bottom:8px;">Генератор постов</h2>
-          <p>Заполните поля — система соберёт смысловые блоки и даст несколько готовых вариантов. Основные варианты текста формируются объёмом <strong>от 1000 до ~1500 символов</strong> (с пробелами).</p>
+        <div class="generator-head-row">
+          <div class="section-head">
+            <h2 style="margin-bottom:8px;">Генератор постов</h2>
+            <p style="margin:0;">Заполните поля — система соберёт смысловые блоки и даст несколько готовых вариантов. Основные варианты текста формируются объёмом <strong>от 1000 до ~1500 символов</strong> (с пробелами).</p>
+          </div>
+          <button type="button" class="theme-btn js-theme-toggle" id="themeToggleGenerator" title="Переключить светлое и тёмное оформление">Тёмная тема</button>
         </div>
 
         <div class="quality-note" role="note">
@@ -587,7 +597,8 @@
         <strong style="color:var(--text);">PostCraft</strong> — локальный генератор черновиков постов для соцсетей. Работает в браузере, шаблоны и списки легко править в коде.
         <p style="margin:12px 0 0;">Подходит SMM-специалистам, экспертам, брендам, магазинам и сервисным бизнесам.</p>
       </div>
-      <div>
+      <div style="display:flex;flex-direction:column;align-items:flex-start;gap:10px;">
+        <button type="button" class="btn btn-ghost btn-sm js-theme-toggle" id="themeToggleFooter" title="Переключить тему оформления">Тёмная тема</button>
         <button type="button" class="btn btn-ghost btn-sm" id="btnTop">Наверх</button>
       </div>
     </div>
@@ -1841,11 +1852,31 @@
     } catch (e) {}
   }
 
+  /** Подпись = что включится по клику; aria-pressed = активна ли тёмная тема. Все кнопки .js-theme-toggle синхронны. */
   function updateThemeBtn() {
-    var b = document.getElementById('themeToggle');
-    if (!b) return;
-    var d = document.documentElement.getAttribute('data-theme') === 'dark';
-    b.textContent = d ? 'Тема: тёмная' : 'Тема: светлая';
+    var darkOn = document.documentElement.getAttribute('data-theme') === 'dark';
+    var nextLabel = darkOn ? 'Светлая тема' : 'Тёмная тема';
+    var nextAria = darkOn ? 'Включить светлое оформление страницы' : 'Включить тёмное оформление страницы';
+    document.querySelectorAll('.js-theme-toggle').forEach(function (b) {
+      b.textContent = nextLabel;
+      b.setAttribute('aria-label', nextAria);
+      b.setAttribute('aria-pressed', darkOn ? 'true' : 'false');
+      b.setAttribute('title', 'Нажмите, чтобы переключить тему. Выбор сохраняется в браузере.');
+    });
+  }
+
+  function toggleTheme() {
+    var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    document.documentElement.setAttribute('data-theme', dark ? 'light' : 'dark');
+    updateThemeBtn();
+    saveStorage();
+    toast(dark ? 'Светлая тема' : 'Тёмная тема');
+  }
+
+  function bindThemeToggles() {
+    document.querySelectorAll('.js-theme-toggle').forEach(function (btn) {
+      btn.addEventListener('click', toggleTheme);
+    });
   }
 
   function renderResult(pack, scroll) {
@@ -2206,12 +2237,7 @@
       toast('Текст живее');
     });
 
-    document.getElementById('themeToggle').addEventListener('click', function () {
-      var cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
-      document.documentElement.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
-      updateThemeBtn();
-      saveStorage();
-    });
+    bindThemeToggles();
 
     ['f_niche','f_product','f_audience','f_platform','f_type','f_tone','f_goal','f_usp','f_pain','f_cta','f_length','f_keywords','f_extra','f_format'].forEach(function (id) {
       var el = document.getElementById(id);
