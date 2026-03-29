@@ -11,6 +11,7 @@
     → нажмите «Сгенерировать пост» → переключайте вкладки результата, копируйте или скачивайте.
 
     ГДЕ МЕНЯТЬ СТИЛИ: блок <style> ниже — переменные :root и [data-theme="dark"].
+    Принципы текста: блок .quality-note в разметке + комментарий «СТИЛЬ ТЕКСТА» в <script>.
 
     ГДЕ МЕНЯТЬ ШАБЛОНЫ ГЕНЕРАЦИИ: в <script> объекты SEG, STRUCT_FLOW, ensurePostLength(),
     TONE_MODIFIERS, PLATFORM_HINTS, composeVariant(), applyModifiers().
@@ -23,38 +24,56 @@
   -->
   <style>
     :root {
-      --bg: #f7f4ef;
-      --bg-card: #fffcf8;
-      --text: #2c2a28;
-      --text-muted: #6b6560;
-      --accent: #c4a574;
-      --accent-soft: #e8dcc8;
-      --border: #e6dfd4;
-      --shadow: 0 18px 48px rgba(44, 42, 40, 0.08);
+      /* Светлая тема: тёплый беж + шоколад */
+      --bg: #ebe3d6;
+      --bg-card: #faf6ef;
+      --text: #2e1f14;
+      --text-muted: #6b5344;
+      --accent: #5c3d2e;
+      --accent-soft: #e5d4c4;
+      --border: #d2c2b0;
+      --shadow: 0 18px 48px rgba(46, 31, 20, 0.1);
+      --btn-from: #6b4423;
+      --btn-to: #4a2c18;
+      --btn-text: #fffdf9;
+      --btn-shadow: rgba(74, 44, 24, 0.38);
       --radius: 18px;
       --radius-sm: 12px;
       --font: "Segoe UI", system-ui, -apple-system, sans-serif;
       --transition: 0.28s ease;
     }
     [data-theme="dark"] {
-      --bg: #1a1918;
-      --bg-card: #242220;
-      --text: #f2ebe3;
-      --text-muted: #a39a90;
+      /* Тёмная тема: глубокий синий + песочно-бежевый акцент */
+      --bg: #141c2c;
+      --bg-card: #1e2a3d;
+      --text: #f4ebe0;
+      --text-muted: #b5a08e;
       --accent: #d4b896;
-      --accent-soft: #3d3630;
-      --border: #3a3530;
-      --shadow: 0 20px 56px rgba(0, 0, 0, 0.45);
+      --accent-soft: #2a3548;
+      --border: #3d4d66;
+      --shadow: 0 22px 60px rgba(5, 12, 28, 0.55);
+      --btn-from: #2e5588;
+      --btn-to: #c9a56e;
+      --btn-text: #141820;
+      --btn-shadow: rgba(20, 40, 72, 0.5);
     }
     *, *::before, *::after { box-sizing: border-box; }
     html { scroll-behavior: smooth; }
     body {
       margin: 0;
       font-family: var(--font);
-      background: var(--bg);
       color: var(--text);
       line-height: 1.55;
       -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+    [data-theme="light"] body {
+      background: linear-gradient(168deg, #fcf9f4 0%, #f2ebe1 42%, #e8dfd2 72%, #e0d2c2 100%);
+      background-attachment: fixed;
+    }
+    [data-theme="dark"] body {
+      background: linear-gradient(155deg, #0a101c 0%, #152a45 32%, #1e3a5c 58%, #2a3548 78%, #3d3428 100%);
+      background-attachment: fixed;
     }
     a { color: var(--accent); text-decoration: none; }
     a:hover { text-decoration: underline; }
@@ -91,8 +110,9 @@
       font-weight: 600; font-size: 0.95rem; transition: var(--transition);
     }
     .btn-primary {
-      background: linear-gradient(135deg, #c4a574, #a88958);
-      color: #fff; box-shadow: 0 8px 24px rgba(196, 165, 116, 0.35);
+      background: linear-gradient(135deg, var(--btn-from), var(--btn-to));
+      color: var(--btn-text);
+      box-shadow: 0 8px 28px var(--btn-shadow);
     }
     .btn-primary:hover { transform: translateY(-2px); filter: brightness(1.05); }
     .btn-ghost {
@@ -257,9 +277,31 @@
       border-radius: var(--radius-sm); box-shadow: var(--shadow);
       font-size: 0.9rem; animation: fadeUp 0.35s ease; pointer-events: auto;
     }
-    [data-theme="dark"] .toast { background: var(--accent-soft); color: var(--text); }
+    [data-theme="dark"] .toast {
+      background: linear-gradient(135deg, #d4b896, #c9a56e);
+      color: #141c24;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+    }
 
     .niche-bar-title { font-size: 0.85rem; font-weight: 600; margin: 14px 0 8px; }
+
+    /* Пояснение про простой текст у генератора */
+    .quality-note {
+      margin: 22px auto 6px;
+      max-width: 720px;
+      padding: 18px 22px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: color-mix(in srgb, var(--accent-soft) 50%, var(--bg-card));
+      font-size: 0.92rem;
+      color: var(--text-muted);
+      line-height: 1.55;
+      text-align: left;
+    }
+    .quality-note strong { color: var(--text); display: block; margin-bottom: 10px; font-size: 0.98rem; }
+    .quality-note ul { margin: 0; padding-left: 1.25em; }
+    .quality-note li { margin-bottom: 8px; }
+    .quality-note li:last-child { margin-bottom: 0; }
   </style>
 </head>
 <body>
@@ -276,6 +318,7 @@
         <div class="reveal">
           <h1>Готовые посты для любой ниши за пару минут</h1>
           <p class="lead">Мини-сервис для SMM-специалистов, экспертов, брендов, магазинов и услуг</p>
+          <p class="lead" style="margin-top:12px;font-size:0.98rem;">Черновики — простым языком: без штампов и «канцелярита», чтобы читатель сразу понял смысл.</p>
           <div style="margin-top:24px;display:flex;flex-wrap:wrap;gap:12px;">
             <a href="#generator" class="btn btn-primary">Сгенерировать пост</a>
             <button type="button" class="btn btn-ghost" id="heroDemoBtn">Посмотреть демо</button>
@@ -386,6 +429,15 @@
           <p>Заполните поля — система соберёт смысловые блоки и даст несколько готовых вариантов. Основные варианты текста формируются объёмом <strong>от 1000 до ~1500 символов</strong> (с пробелами).</p>
         </div>
 
+        <div class="quality-note" role="note">
+          <strong>Текст для читателя, а не «для галочки»</strong>
+          <ul>
+            <li>Черновики держим <strong>простыми и понятными</strong>: без странных шаблонных слов, пустых маркетинговых клише и тяжёлого канцелярита — так, чтобы с первого прочтения было ясно, о чём пост.</li>
+            <li>Удобно читать с телефона: <strong>короткие предложения</strong>, нормальные связки между мыслями, без лишней воды и «умных» слов ради вида.</li>
+            <li>Генератор даёт основу — <strong>прогоните глазами и подправьте под ваш голос</strong>; включите «проще и человечнее» в переключателях или в чекбоксах, если нужен ещё более разговорный тон.</li>
+          </ul>
+        </div>
+
         <p class="niche-bar-title">Быстрый выбор ниши (внутри генератора)</p>
         <div class="chips" id="nicheChipsGen"></div>
 
@@ -440,7 +492,7 @@
               </select>
             </div>
             <div class="field field-full"><label for="f_keywords">Ключевые слова</label><input type="text" id="f_keywords" name="keywords" placeholder="Через запятую" /></div>
-            <div class="field field-full"><label for="f_extra">Дополнительные пожелания</label><textarea id="f_extra" name="extra"></textarea></div>
+            <div class="field field-full"><label for="f_extra">Дополнительные пожелания</label><textarea id="f_extra" name="extra" placeholder="Например: без штампов, проще словами, больше конкретики, без навязчивого тона"></textarea></div>
             <div class="field field-full">
               <label for="f_format">Формат текста</label>
               <select id="f_format" name="format"></select>
@@ -536,6 +588,12 @@
    * 6) generatePack() собирает основной пост + альтернативы, сторис, хэштеги и т.д.
    * Плейсхолдеры в шаблонах: {{niche}}, {{product}}, {{audience}}, {{pain}}, {{usp}}, {{goal}}, {{cta}}, {{keywords}}
    * Объём поста: ensurePostLength() доводит основной текст до ≥1000 знаков (цель ~1000–1500).
+   *
+   * СТИЛЬ ТЕКСТА (важно при правке шаблонов SEG и фраз):
+   * — Пишем так, будто объясняем живому человеку: без «рады сообщить», «уникальное предложение»,
+   *   «лучшее решение для всех», пассивных «было принято решение» и прочих шаблонов.
+   * — Короткие фразы, ясный смысл, естественные союзы; ключевые слова вплетаем, не ломая чтение.
+   * — После генерации текст стоит вычитать: убрать повторы и всё, что звучит «как у всех».
    */
 
   /* ---------- Конфиг: ниши и пресеты (правьте здесь список ниш) ---------- */
