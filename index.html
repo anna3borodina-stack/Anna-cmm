@@ -15,12 +15,12 @@
     ГДЕ МЕНЯТЬ СТИЛИ: блок <style> ниже — переменные :root и [data-theme="dark"].
     Принципы текста: блок .quality-note в разметке + комментарий «СТИЛЬ ТЕКСТА» в <script>.
 
-    ГДЕ МЕНЯТЬ ШАБЛОНЫ ГЕНЕРАЦИИ: в <script> объекты SEG, STRUCT_FLOW, ensurePostLength(),
-    TONE_MODIFIERS, PLATFORM_HINTS, composeVariant(), applyModifiers().
+    ГДЕ МЕНЯТЬ ШАБЛОНЫ ГЕНЕРАЦИИ: в <script> объекты SEG, TYPE_* (под тип поста), STRUCT_FLOW,
+    ensurePostLength(), TONE_MODIFIERS, PLATFORM_HINTS, composeVariant(), applyModifiers().
     Длина поста: константы POST_MIN_CHARS (минимум) и POST_SOFT_MAX_CHARS (мягкий потолок).
 
     ГДЕ МЕНЯТЬ СПИСКИ: константы NICHE_LIST, NICHE_PRESETS, POST_TYPE_OPTIONS, TONE_OPTIONS,
-    GOAL_CHIPS, FORMAT_OPTIONS, QUICK_STRUCTURES, HEADLINE_POOL, CTA_POOL, STORIES_POOL,
+    GOAL_CHIPS, FORMAT_OPTIONS, QUICK_STRUCTURES, HEADLINE_POOL, CTA_POOL, GREETING_POOL, STORIES_POOL,
     HASHTAG_BASE, BANNER_PHRASES, REELS_IDEAS — все в начале скрипта, с комментариями.
     ═══════════════════════════════════════════════════════════════════════════
   -->
@@ -503,6 +503,7 @@
             <li>Удобно читать с телефона: <strong>короткие предложения</strong>, нормальные связки между мыслями, без лишней воды и «умных» слов ради вида.</li>
             <li>Генератор даёт основу — <strong>прогоните глазами и подправьте под ваш голос</strong>; включите «проще и человечнее» в переключателях или в чекбоксах, если нужен ещё более разговорный тон.</li>
             <li>Система сама <strong>режет повторы абзацев</strong>, подмечает типовые штампы и чередует формулировки — текст получается ровнее и спокойнее для ленты.</li>
+            <li>По типу поста генератор усиливает смысл: <strong>информационный</strong> — через примеры и сцены, <strong>вовлекающий</strong> — дополнительный вопрос к читателю, <strong>продающий</strong> — мягкое подведение к решению без «мы предлагаем».</li>
             <li>В «Дополнительные пожелания» пишите <strong>по-человечески</strong>, без строк вроде «Контекст: …» или «Ключевые акценты: …» — иначе это попадёт в текст и будет выглядеть как черновик ТЗ.</li>
           </ul>
         </div>
@@ -756,14 +757,20 @@
    * 6) generatePack() собирает основной пост + альтернативы, сторис, хэштеги и т.д.
    * 7) polishText() — снятие дублей абзацев + фильтр типовых штампов; pickUnusedFromPool() и usedMap
    *    снижают повтор фраз внутри одного текста; insertBridges() добавляет короткие живые связки.
-   * Плейсхолдеры в шаблонах: {{niche}}, {{product}}, {{audience}}, {{pain}}, {{usp}}, {{goal}}, {{cta}}, {{keywords}}
+   * Плейсхолдеры в шаблонах (сохраняйте все при правках): {{niche}}, {{product}}, {{audience}}, {{pain}},
+   * {{usp}}, {{goal}}, {{cta}}, {{keywords}}; контекст формы также: platform, postType, tone, length, format, extra.
    * Объём поста: ensurePostLength() доводит основной текст до ≥1000 знаков (цель ~1000–1500).
    *
-   * СТИЛЬ ТЕКСТА (важно при правке шаблонов SEG и фраз):
-   * — Пишем так, будто объясняем живому человеку: без «рады сообщить», «уникальное предложение»,
-   *   «лучшее решение для всех», пассивных «было принято решение» и прочих шаблонов.
-   * — Короткие фразы, ясный смысл, естественные союзы; ключевые слова вплетаем, не ломая чтение.
-   * — После генерации текст стоит вычитать: убрать повторы и всё, что звучит «как у всех».
+   * ═══ ПРОМПТ ГЕНЕРАЦИИ (редакторский смысл; шаблоны = SEG + TYPE_* пулы) ═══
+   * Тон: живой, как разговор с человеком в ленте. Опирайся на ситуации и мысли клиента («что у него в
+   * голове», «когда это случается»), а не на рекламные заготовки. Не используй «мы предлагаем»,
+   * «рады сообщить», «уникальное предложение», пассивы и пустые маркетинговые конструкции.
+   * Логика по типу поста (реализована в applyPostTypeAccents + пулы TYPE_*):
+   * — Информационный: объясняй через мини-примеры и узнаваемые сцены, не через абстракции.
+   * — Вовлекающий: добавляй прямой вопрос к читателю (мысль, выбор, узнавание).
+   * — Продающий (и promo): мягко подводи к решению — без давления, через заботу и ясность пользы.
+   * Общее: короткие предложения, естественные союзы; ключевые слова — в пользу смысла, не «для SEO».
+   * После генерации текст стоит вычитать под голос бренда.
    */
 
   /* ---------- Конфиг: ниши и пресеты (правьте здесь список ниш) ---------- */
@@ -900,6 +907,20 @@
     'Напишите одним словом, что ближе — и {{cta}}',
     'Без обязательств: {{cta}}',
     'Дальше по шагам: {{cta}}'
+  ];
+
+  /** Всегда первый абзац основного текста — живое приветствие (без дублей с «крючком»). */
+  var GREETING_POOL = [
+    'Здравствуйте!',
+    'Привет!',
+    'Добрый день!',
+    'Добрый вечер!',
+    'Приветствую вас!',
+    'Рады видеть вас здесь.',
+    'Доброго дня!',
+    'Здравствуйте, друзья!',
+    'Привет! Спасибо, что заглянули.',
+    'Здравствуйте — дальше коротко о {{niche}}.'
   ];
 
   var STORIES_POOL = [
@@ -1433,6 +1454,46 @@
   SEG.informational = SEG.expert;
   SEG.promo = SEG.selling;
 
+  /* Промпт → логика типа: примеры / вопрос читателю / мягкий путь к решению (все плейсхолдеры как в SEG) */
+  var TYPE_INFORMATIONAL_EXAMPLE = T([
+    'На примере из {{niche}}: человек ловит себя на том, что {{pain}} — и уже перепробовал «советы из интернета». Ниже не мораль, а разбор по шагам.',
+    'Представьте: {{audience}} выбирает {{product}} и в голове крутится одно и то же — {{pain}}. Так у многих; важно, как из этого выходить без геройства.',
+    'Мини-ситуация: убрать из рассказа {{usp}} — и про {{product}} остаются пустые слова. Добавить одну честную деталь — и смысл читается с экрана.',
+    'Пример из практики {{niche}}: {{pain}} редко про «лень» — чаще про неясный следующий шаг и усталость от шума.',
+    'Конкретика: {{keywords}} — не украшение текста, а сцена, где человек ищет {{goal}} и буксует. Разберём на этом крючке.',
+    'Картинка из жизни: вечер, мало сил, а {{pain}} снова на повестке. {{audience}} так живёт — и это не повод стыдиться.',
+    'Ситуация знакомая: {{product}} нравится, но страшно ошибиться — отсюда и типичное {{pain}}.',
+    'Через пример: в {{niche}} доверие растёт, когда честно показывают {{usp}}, а не обещают «всё за вас».',
+    'Объясняю на кейсе: {{goal}} откладывается, пока {{pain}} не разложить по полочкам — без давления и без «ты недостаточно старался».',
+    'Иллюстрация: один и тот же {{product}} «как у всех» и с живой деталью для {{audience}} — разница в ощущении огромная.'
+  ]);
+
+  var TYPE_SELLING_SOFT_PATH = T([
+    'Если за этот текст зацепило — подумайте о {{product}} как о способе спокойно дойти до {{goal}}, без гонки и без «надо успеть».',
+    'Без крика «покупайте»: если узнали себя в {{pain}}, {{product}} как раз про то, чтобы не оставаться с этим в одиночку.',
+    'Мягко: вам не обязательно решать сразу — достаточно присмотреться к {{product}} и к тому, как там сделан акцент на {{usp}}.',
+    'Путь без давления: сначала примите, что {{pain}} нормален для {{audience}}; потом посмотрите на {{product}} уже с другим настроем.',
+    'К решению подводим аккуратно: {{usp}} — не лозунг, а то, что снимает типичный страх перед выбором.',
+    'Если откликнулось «внутри», а не по долгу — возможно, {{goal}} уже ближе: {{product}} как следующий маленький шаг.',
+    'Не продаём пустыми словами: у {{product}} есть смысл, когда за ним видно {{usp}} — это ощущается как забота, а не пушинг.',
+    'Тихий довод: в {{niche}} часто выбирают не самое кричащее, а то, где {{pain}} назвали по имени — рядом с {{product}}.',
+    'Окно без обязательств: сохраните пост и вернитесь к {{product}}, когда будете готовы к {{goal}} — темп ваш.',
+    'Мостик к выбору: вы уже прочитали про {{pain}}; {{product}} — часть истории, где становится чуть легче дышать.'
+  ]);
+
+  var TYPE_ENGAGING_READER_QUESTION = T([
+    'Как бы вы сами описали {{pain}} одной фразой — честно, без «красиво для поста»?',
+    'У вас так же: {{niche}} цепляет, а {{goal}} откладывается на «потом»?',
+    'Вопрос к {{audience}}: что сейчас страшнее — сделать шаг или снова отложить?',
+    'Скажите себе правду: {{product}} вам откликается или пока только «смотрю со стороны»?',
+    'Где вы сами: {{pain}} — «у всех так» или уже пора с этим что-то делать?',
+    'Что для вас важнее сегодня в {{niche}} — скорость или ощущение, что вас не обманут?',
+    'Если убрать страх на минуту: что бы вы попробовали ради {{goal}}?',
+    'Вопрос к читателю: {{usp}} для вас про «наконец понятно, зачем» или про красивую фразу?',
+    'Как вы обычно выходите из {{pain}} — и хватает ли этого больше чем на неделю?',
+    '{{keywords}} для вас про реальную пользу или про галочку в тексте — как сейчас?'
+  ]);
+
   /* Порядок смысловых блоков под структуру (AIDA, PAS и т.д.) */
   var STRUCT_FLOW = {
     default: ['hook', 'pain', 'sol', 'ben', 'val'],
@@ -1477,22 +1538,34 @@
     }).replace(/\s+/g, ' ').replace(/\s([.,!?])/g, '$1').trim();
   }
 
+  /** Убирает строки «Контекст:…», «Ключевые акценты:…» из полей формы — в посте остаётся язык для читателя. */
+  function sanitizeReaderField(s) {
+    if (!s) return s;
+    var lines = String(s).split(/\r?\n/).map(function (l) { return l.trim(); }).filter(Boolean);
+    lines = lines.filter(function (line) {
+      if (/^[Кк]онтекст\s*:/.test(line)) return false;
+      if (/^[Кк]лючевые\s+акценты\s*:/.test(line)) return false;
+      return true;
+    });
+    return lines.join('\n').trim();
+  }
+
   function readCtx() {
     function val(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; }
     function chk(id) { var el = document.getElementById(id); return el && el.checked; }
-    var niche = val('f_niche') || 'вашу нишу';
-    var product = val('f_product') || 'ваш продукт';
-    var audience = val('f_audience') || 'ваша аудитория';
+    var niche = sanitizeReaderField(val('f_niche')) || 'вашу нишу';
+    var product = sanitizeReaderField(val('f_product')) || 'ваш продукт';
+    var audience = sanitizeReaderField(val('f_audience')) || 'ваша аудитория';
     var platform = val('f_platform') || 'universal';
     var postType = normalizePostTypeValue(val('f_type'));
     var toneRaw = val('f_tone');
     var tone = toneRaw ? normalizeToneValue(toneRaw) : 'universal';
-    var goal = val('f_goal') || 'сделать следующий шаг проще';
-    var usp = val('f_usp') || 'ваше сильное отличие';
-    var pain = val('f_pain') || 'типичную боль аудитории';
+    var goal = sanitizeReaderField(val('f_goal')) || 'сделать следующий шаг проще';
+    var usp = sanitizeReaderField(val('f_usp')) || 'ваше сильное отличие';
+    var pain = sanitizeReaderField(val('f_pain')) || 'типичную боль аудитории';
     var cta = val('f_cta') || 'напишите в сообщения — подскажем по делу';
-    var keywords = val('f_keywords') || niche;
-    var extra = val('f_extra');
+    var keywords = sanitizeReaderField(val('f_keywords')) || niche;
+    var extra = sanitizeReaderField(val('f_extra'));
     return {
       niche: niche,
       product: product,
@@ -1607,6 +1680,7 @@
   var CLICHE_REPLACEMENTS = [
     [/мы\s+рады\s+(вам\s+)?сообщить/gi, 'коротко'],
     [/предлагаем\s+вашему\s+вниманию/gi, 'ниже по делу'],
+    [/мы\s+предлагаем/gi, 'есть вариант'],
     [/уникальн(ое|ая|ый|ые)\s+предложени[ея]/gi, 'конкретное предложение'],
     [/лучшее\s+решени[ея]\s+для\s+всех/gi, 'рабочий вариант под ваш запрос'],
     [/не\s+упустите\s+возможность/gi, 'если откликается — напишите'],
@@ -1616,7 +1690,14 @@
     [/гарантируем\s+100%/gi, 'даём понятные условия'],
     [/комплексный\s+подход\s+к\s+каждому/gi, 'разбираем по шагам'],
     [/в\s+современном\s+мире/gi, 'на практике'],
-    [/на\s+высшем\s+уровне/gi, 'аккуратно и по стандарту']
+    [/на\s+высшем\s+уровне/gi, 'аккуратно и по стандарту'],
+    [/закрывает\s+запрос\s*:\s*/gi, 'главное — '],
+    [/закрывает\s+запрос\b/gi, 'решает вашу задачу'],
+    [/подписки\s*,\s*догрев\s*,\s*продажи/gi, 'чтобы вам было проще выбрать и купить без лишних сомнений'],
+    [/\bдогрев\b/gi, 'прогрев интереса'],
+    [/делаем\s+ставку\s+на/gi, 'делаем акцент на'],
+    [/тратите\s+меньше\s+нервов/gi, 'тратите меньше сил'],
+    [/меньше\s+нервов/gi, 'меньше сомнений']
   ];
 
   function sanitizeCliches(text) {
@@ -1634,13 +1715,44 @@
   /** Убирает «технические» абзацы и лишние слова в начале — пост сразу звучит по-человечески. */
   function humanizeFlow(text) {
     if (!text) return text;
-    var paras = text.split(/\n\n').map(function (p) { return p.trim(); }).filter(Boolean);
+    function normalizeParagraph(p) {
+      var lines = String(p).split(/\r?\n/).map(function (l) { return l.trim(); }).filter(Boolean);
+      lines = lines.filter(function (line) {
+        if (/^[Кк]онтекст\s*:/.test(line)) return false;
+        if (/^[Кк]лючевые\s+акценты\s*:/.test(line)) return false;
+        return true;
+      });
+      if (!lines.length) return '';
+      return lines.join(' ').replace(/\s{2,}/g, ' ').trim();
+    }
+    function wrapOrphanClause(p) {
+      var t = p.trim();
+      if (t.length > 130) return p;
+      if (/[.!?…]\s*$/.test(t)) return p;
+      if (!/^[а-яё]/.test(t)) return p;
+      var w = t.split(/\s+/);
+      if (w.length < 3 || w.length > 13) return p;
+      if (/^\{\{/.test(t)) return p;
+      var fw = w[0].toLowerCase().replace(/^[«"']+|[,:;.]+$/g, '');
+      var open = { боятся: 1, боитесь: 1, боится: 1, боюсь: 1, страшно: 1, непонятно: 1, сложно: 1, трудно: 1, хочется: 1 };
+      if (!open[fw] && !(fw === 'не' && w[1] && /^хватает$/i.test(w[1]))) return p;
+      return 'Многие ' + t + (/\s*[.!?]\s*$/.test(t) ? '' : '.');
+    }
+    function capitalizeFirstPara(t) {
+      var paras = t.split(/\n\n');
+      if (!paras.length || !paras[0]) return t;
+      var p0 = paras[0];
+      if (/^[а-яё]/.test(p0)) paras[0] = p0.charAt(0).toUpperCase() + p0.slice(1);
+      return paras.join('\n\n');
+    }
+    var paras = text.split(/\n\n').map(normalizeParagraph).filter(Boolean);
     paras = paras.filter(function (p) {
-      if (/^контекст\s*:/i.test(p)) return false;
-      if (/^ключевые\s+акценты\s*:/i.test(p)) return false;
+      if (/^[Кк]онтекст\s*:/.test(p)) return false;
+      if (/^[Кк]лючевые\s+акценты\s*:/.test(p)) return false;
       if (/место\s+для\s+уточняющего|уточняющего\s+вопроса\s+в\s+конце|место\s+для\s+вопроса\s+в\s+конце/i.test(p)) return false;
       return true;
     });
+    paras = paras.map(wrapOrphanClause);
     if (!paras.length) return text;
     if (/^(смотрите|к\s+делу|по\s+факту|если\s+коротко|дальше\s*—\s*по\s+сути|вот\s+что\s+важно|без\s+лишних\s+слов|что\s+из\s+этого\s+следует)\.?$/i.test(paras[0])) paras.shift();
     if (!paras.length) return text;
@@ -1648,16 +1760,20 @@
       .replace(/^\s*(смотрите|к\s+делу)\s*[.,]\s*/i, '')
       .replace(/^\s*(если\s+коротко|дальше\s*—\s*по\s+сути|вот\s+что\s+важно|по\s+факту|без\s+лишних\s+слов)\s*[.:]?\s*/i, '')
       .trim();
-    /* Врезки «как из ТЗ» внутри абзаца */
+    /* Врезки «как из ТЗ» внутри абзаца (К/к — явно: флаг i в JS не всегда складывает кириллицу) */
     paras = paras.map(function (p) {
       return p
-        .replace(/\s*Контекст\s*:\s*[^.·\n]+(?:·|•)\s*[^.·\n]*\.?/gi, ' ')
-        .replace(/\s*Ключевые\s+акценты\s*:\s*[^\n.]+[.!?]?/gi, ' ')
+        .replace(/\s*[Кк]онтекст\s*:\s*[^.·\n]+(?:·|•)\s*[^.·\n]*\.?/g, ' ')
+        .replace(/\s*[Кк]лючевые\s+акценты\s*:\s*[^\n.]+[.!?]?/g, ' ')
         .replace(/\s*[—–-]\s*Место\s+для\s+уточняющего[^.!?]*[.!?]?/gi, '')
         .replace(/\s{2,}/g, ' ')
         .trim();
     }).filter(Boolean);
-    return paras.join('\n\n');
+    var out = paras.join('\n\n');
+    out = out.replace(/\bесли\s+остались\s+вопросы\s+пишите\s+с\s+удовольствием\s+поможем\b/gi, 'Если остались вопросы — пишите, с удовольствием поможем.');
+    out = out.replace(/\bесли\s+остались\s+вопросы\s*,?\s*пишите\b/gi, 'Если остались вопросы — пишите');
+    out = capitalizeFirstPara(out);
+    return out;
   }
 
   /* Только мягкие связки между серединой абзацев — не перед приветствием и не в начале поста */
@@ -1771,6 +1887,22 @@
     return polishText(text);
   }
 
+  /** Промпт по типу поста: информационный → пример; вовлекающий → вопрос; продающий → мягкий путь к решению. */
+  function applyPostTypeAccents(parts, ctx, usedMap, seed) {
+    if (!parts || !parts.length) return;
+    var t = ctx.postType;
+    if (t === 'informational') {
+      var ex = pickUnusedFromPool(TYPE_INFORMATIONAL_EXAMPLE, ctx, usedMap, seed + 3);
+      if (ex) parts.splice(1, 0, ex);
+    } else if (t === 'selling' || t === 'promo') {
+      var soft = pickUnusedFromPool(TYPE_SELLING_SOFT_PATH, ctx, usedMap, seed + 7);
+      if (soft) parts.push(soft);
+    } else if (t === 'engaging') {
+      var rq = pickUnusedFromPool(TYPE_ENGAGING_READER_QUESTION, ctx, usedMap, seed + 11);
+      if (rq) parts.push(rq);
+    }
+  }
+
   function composeVariant(ctx, seedOffset) {
     var table = segTable(ctx.postType === 'informational' ? 'expert' : (ctx.postType === 'promo' ? 'selling' : ctx.postType));
     var flow = flowFor(ctx);
@@ -1783,11 +1915,14 @@
       parts.push(pickUnusedFromPool(pool, ctx, used, rnd + i * 19));
       rnd += 41;
     }
+    applyPostTypeAccents(parts, ctx, used, rnd + (seedOffset || 0) * 31);
     parts.push(pickUnusedFromPool(CTA_POOL, ctx, used, rnd));
     parts = insertBridges(parts, rnd + (seedOffset || 0) * 13);
     var body = parts.join('\n\n');
     if (ctx.extra) body += '\n\nP.S. ' + ctx.extra + emojiFor(ctx, 0);
     body = applyFormat(body, ctx);
+    var gIdx = Math.abs(((seedOffset || 0) * 59 + rnd + body.length) % GREETING_POOL.length);
+    body = fill(GREETING_POOL[gIdx], ctx).trim() + '\n\n' + body;
     return ensurePostLength(body, ctx, (seedOffset || 0) * 97 + flow.length, used);
   }
 
