@@ -17,7 +17,7 @@
 
     ГДЕ МЕНЯТЬ ШАБЛОНЫ ГЕНЕРАЦИИ: в <script> объекты SEG, TYPE_* (под тип поста), STRUCT_FLOW,
     ensurePostLength(), TONE_MODIFIERS, PLATFORM_HINTS, composeVariant(), applyModifiers().
-    Длина поста: константы POST_MIN_CHARS (минимум) и POST_SOFT_MAX_CHARS (мягкий потолок).
+    Длина поста: до POST_PARAGRAPH_MAX смысловых частей, на выходе — сплошной текст; без раздувания символов.
 
     ГДЕ МЕНЯТЬ СПИСКИ: константы NICHE_LIST, NICHE_PRESETS, POST_TYPE_OPTIONS, TONE_OPTIONS,
     GOAL_CHIPS, FORMAT_OPTIONS, QUICK_STRUCTURES, HEADLINE_POOL, CTA_POOL, GREETING_POOL, STORIES_POOL,
@@ -491,7 +491,7 @@
         <div class="generator-head-row">
           <div class="section-head">
             <h2 style="margin-bottom:8px;">Генератор постов</h2>
-            <p style="margin:0;">Заполните поля — система соберёт смысловые блоки и даст несколько готовых вариантов. Основные варианты текста формируются объёмом <strong>от 1000 до ~1500 символов</strong> (с пробелами).</p>
+            <p style="margin:0;">Заполните поля — система соберёт смысловые части и даст несколько готовых вариантов. Основной текст — <strong>лаконичный, одним сплошным блоком</strong> (внутри — ориентир 5–8 смысловых фрагментов), без лишних повторов и «воды».</p>
           </div>
           <button type="button" class="theme-btn js-theme-toggle" id="themeToggleGenerator" title="Переключить светлое и тёмное оформление">Тёмная тема</button>
         </div>
@@ -502,7 +502,7 @@
             <li>Черновики держим <strong>простыми и понятными</strong>: без странных шаблонных слов, пустых маркетинговых клише и тяжёлого канцелярита — так, чтобы с первого прочтения было ясно, о чём пост.</li>
             <li>Удобно читать с телефона: <strong>короткие предложения</strong>, нормальные связки между мыслями, без лишней воды и «умных» слов ради вида.</li>
             <li>Генератор даёт основу — <strong>прогоните глазами и подправьте под ваш голос</strong>; включите «проще и человечнее» в переключателях или в чекбоксах, если нужен ещё более разговорный тон.</li>
-            <li>Система сама <strong>режет повторы абзацев</strong>, подмечает типовые штампы и чередует формулировки — текст получается ровнее и спокойнее для ленты.</li>
+            <li>Система <strong>убирает повторы одной мысли</strong>, штампы и служебные пометки; основной текст — <strong>сплошной, до 8 смысловых частей</strong>, без лишних связок и пустых строк в теле поста.</li>
             <li>По типу поста генератор усиливает смысл: <strong>информационный</strong> — через примеры и сцены, <strong>вовлекающий</strong> — дополнительный вопрос к читателю, <strong>продающий</strong> — мягкое подведение к решению без «мы предлагаем».</li>
             <li>В «Дополнительные пожелания» пишите <strong>по-человечески</strong>, без строк вроде «Контекст: …» или «Ключевые акценты: …» — иначе это попадёт в текст и будет выглядеть как черновик ТЗ.</li>
           </ul>
@@ -683,7 +683,7 @@
           <ol style="margin:0;padding-left:1.25em;color:var(--text-muted);line-height:1.6;">
             <li>Нажмите <strong>«Сгенерировать пост»</strong>.</li>
             <li>Ниже появятся <strong>вкладки</strong>: основной текст, варианты 2–3, без эмодзи, премиальный, короткий, сторис, хэштеги. На первой вкладке — также дополнительные блоки (заголовки, входы, CTA, идеи для Reels).</li>
-            <li>Основной текст обычно <strong>около 1000–1500 символов</strong> — это черновик; при необходимости отредактируйте под голос бренда.</li>
+            <li>Основной текст выводится <strong>одним блоком</strong> (по объёму — ориентир 5–8 смысловых частей), без повторов одной мысли; при необходимости отредактируйте под голос бренда.</li>
           </ol>
         </details>
         <details class="instr-part">
@@ -755,22 +755,21 @@
    * 4) composeVariant() случайно (с «сидом») выбирает фразы из пулов и склеивает текст.
    * 5) applyModifiers / applyFormat доформатировывают длину, списки, усиления.
    * 6) generatePack() собирает основной пост + альтернативы, сторис, хэштеги и т.д.
-   * 7) polishText() — снятие дублей абзацев + фильтр типовых штампов; pickUnusedFromPool() и usedMap
-   *    снижают повтор фраз внутри одного текста; insertBridges() добавляет короткие живые связки.
+   * 7) polishText() — дедуп мыслей, штампы, humanizeFlow, лимит «абзацев» на этапе сборки, затем mergePostToSingleFlow (сплошной текст); insertBridges отключены.
    * Плейсхолдеры в шаблонах (сохраняйте все при правках): {{niche}}, {{product}}, {{audience}}, {{pain}},
    * {{usp}}, {{goal}}, {{cta}}, {{keywords}}; контекст формы также: platform, postType, tone, length, format, extra.
-   * Объём поста: ensurePostLength() доводит основной текст до ≥1000 знаков (цель ~1000–1500).
+   * Объём: не больше POST_PARAGRAPH_MAX смысловых частей при сборке; в ленту — одним блоком; без дописывания «воды» до символьного минимума.
    *
    * ═══ ПРОМПТ ГЕНЕРАЦИИ (редакторский смысл; шаблоны = SEG + TYPE_* пулы) ═══
-   * Тон: живой, как разговор с человеком в ленте. Опирайся на ситуации и мысли клиента («что у него в
-   * голове», «когда это случается»), а не на рекламные заготовки. Не используй «мы предлагаем»,
-   * «рады сообщить», «уникальное предложение», пассивы и пустые маркетинговые конструкции.
-   * Логика по типу поста (реализована в applyPostTypeAccents + пулы TYPE_*):
-   * — Информационный: объясняй через мини-примеры и узнаваемые сцены, не через абстракции.
-   * — Вовлекающий: добавляй прямой вопрос к читателю (мысль, выбор, узнавание).
-   * — Продающий (и promo): мягко подводи к решению — без давления, через заботу и ясность пользы.
-   * Общее: короткие предложения, естественные союзы; ключевые слова — в пользу смысла, не «для SEO».
-   * После генерации текст стоит вычитать под голос бренда.
+   * Стиль: живой, но лаконичный. Каждое предложение несёт смысл — без лишних слов и общих фраз.
+   * Запрещено: служебные пометки («Контекст:», «Ключевые акценты:» и любые ТЗ-врезки), повтор одной и той же
+   * мысли разными формулировками, канцелярит и пустой маркетинг («мы предлагаем», «рады сообщить»).
+   * Объём поста: 5–8 смысловых частей при сборке (жёстко не больше POST_PARAGRAPH_MAX); в готовом виде — сплошной текст без абзацных разрывов; если смыслов больше — сжимай, не дублируй.
+   * Логика по типу поста (applyPostTypeAccents + TYPE_*):
+   * — Информационный: через примеры и сцены, без перегруза.
+   * — Вовлекающий: один ясный вопрос к читателю, без набора пустых опросов.
+   * — Продающий / promo: мягко к решению, без давления и без повтора выгоды в каждой новой фразе.
+   * Ключевые слова — вплетать по делу, не ради объёма.
    */
 
   /* ---------- Конфиг: ниши и пресеты (правьте здесь список ниш) ---------- */
@@ -851,7 +850,7 @@
     { value: 'short', label: 'Короткий пост' },
     { value: 'medium', label: 'Средний пост' },
     { value: 'long', label: 'Длинный пост' },
-    { value: 'paragraphs', label: 'Пост с абзацами' },
+    { value: 'paragraphs', label: 'Сплошной текст (одним блоком)' },
     { value: 'list', label: 'Пост списком' },
     { value: 'story', label: 'Пост как история' },
     { value: 'personal', label: 'Личное обращение' },
@@ -951,10 +950,10 @@
   ];
 
   var PLATFORM_HINTS = {
-    instagram: 'Формат ленты: 1–2 коротких абзаца, лучше читать с мобилы.',
+    instagram: 'Лента: короткие предложения в одном блоке — так удобнее с телефона.',
     telegram: 'TG: можно чуть больше смысла в одном сообщении, сохраните «для себя».',
     vk: 'VK: добавьте дружелюбный тон обсуждения, вопрос в конце усиливает охват.',
-    universal: 'Универсально: держите одну мысль на экран, остальное — вторым абзацем.'
+    universal: 'Универсально: первые строки — главная мысль, дальше развёрнуто в том же тексте.'
   };
 
   var TONE_MODIFIERS = {
@@ -1648,17 +1647,28 @@
   function isNearDuplicate(a, b) {
     if (!a || !b) return false;
     if (a === b) return true;
-    if (a.length < 28 || b.length < 28) return false;
     if (a.indexOf(b) !== -1 || b.indexOf(a) !== -1) return true;
-    var wa = a.split(' ');
-    var wb = b.split(' ');
-    if (wa.length < 7 || wb.length < 7) return false;
+    var wa = String(a).split(/\s+/).filter(function (w) { return w.length > 0; });
+    var wb = String(b).split(/\s+/).filter(function (w) { return w.length > 0; });
+    function overlapRatio() {
+      var setb = {};
+      var i;
+      for (i = 0; i < wb.length; i++) if (wb[i].length > 2) setb[wb[i]] = 1;
+      var inter = 0;
+      for (i = 0; i < wa.length; i++) if (wa[i].length > 2 && setb[wa[i]]) inter++;
+      var denom = Math.min(wa.length, wb.length);
+      return denom > 0 ? inter / denom : 0;
+    }
+    if (a.length < 140 && b.length < 140 && wa.length >= 4 && wb.length >= 4) {
+      return overlapRatio() > 0.5;
+    }
+    if (wa.length < 6 || wb.length < 6) return false;
     var setb = {};
     for (var i = 0; i < wb.length; i++) setb[wb[i]] = 1;
     var inter = 0;
     for (var j = 0; j < wa.length; j++) if (setb[wa[j]]) inter++;
     var uni = wa.length + wb.length - inter;
-    return uni > 0 && inter / uni > 0.68;
+    return uni > 0 && inter / uni > 0.52;
   }
 
   function dedupeParagraphs(text) {
@@ -1708,13 +1718,66 @@
     return t.replace(/\n{3,}/g, '\n\n').replace(/[ \t]{2,}/g, ' ').replace(/\s+([.,;:!?])/g, '$1').trim();
   }
 
+  /** Жёсткий потолок абзацев (промпт: ориентир 5–8, не больше этого числа). */
+  var POST_PARAGRAPH_MAX = 8;
+
+  /** Оставляет первый и последний абзацы, из середины — равномерно, чтобы уложиться в maxP. */
+  function limitParagraphsToMax(text, maxP) {
+    if (!text || !maxP) return text;
+    var paras = String(text).split(/\n\n').map(function (p) { return p.trim(); }).filter(Boolean);
+    if (paras.length <= maxP) return paras.join('\n\n');
+    var firstN = 1;
+    var lastN = 1;
+    if (paras.length <= firstN + lastN) return paras.join('\n\n');
+    var first = paras.slice(0, firstN);
+    var last = paras.slice(-lastN);
+    var mid = paras.slice(firstN, paras.length - lastN);
+    var slot = maxP - firstN - lastN;
+    var sel = [];
+    if (mid.length <= slot) sel = mid.slice();
+    else if (slot <= 0) sel = [];
+    else if (slot === 1) sel = [mid[Math.floor(mid.length / 2)]];
+    else {
+      var k;
+      for (k = 0; k < slot; k++) {
+        var idx = Math.round((k / (slot - 1)) * (mid.length - 1));
+        sel.push(mid[idx]);
+      }
+    }
+    return first.concat(sel).concat(last).join('\n\n');
+  }
+
+  /** После лимита абзацев — один сплошной текст для ленты (без пустых строк между «блоками»). */
+  function mergePostToSingleFlow(text) {
+    if (!text) return text;
+    return String(text)
+      .replace(/\r\n/g, '\n')
+      .split(/\n\s*\n+/)
+      .map(function (p) { return p.replace(/\s+/g, ' ').trim(); })
+      .filter(Boolean)
+      .join(' ')
+      .replace(/\s+([.,;:!?])/g, '$1')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+  }
+
   function polishText(text) {
-    return humanizeFlow(sanitizeCliches(dedupeParagraphs(text)));
+    var t = String(text || '').trim();
+    t = dedupeParagraphs(sanitizeCliches(dedupeParagraphs(t)));
+    t = humanizeFlow(t);
+    t = limitParagraphsToMax(t, POST_PARAGRAPH_MAX);
+    t = dedupeParagraphs(t);
+    return mergePostToSingleFlow(t);
   }
 
   /** Убирает «технические» абзацы и лишние слова в начале — пост сразу звучит по-человечески. */
   function humanizeFlow(text) {
     if (!text) return text;
+    text = String(text)
+      .replace(/^[ \t\uFEFF]*[Кк]онтекст\s*:[^\r\n]*(?:\r?\n|$)/gim, '')
+      .replace(/^[ \t]*[Кк]лючевые\s+акценты\s*:[^\r\n]*(?:\r?\n|$)/gim, '')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
     function normalizeParagraph(p) {
       var lines = String(p).split(/\r?\n/).map(function (l) { return l.trim(); }).filter(Boolean);
       lines = lines.filter(function (line) {
@@ -1763,6 +1826,8 @@
     /* Врезки «как из ТЗ» внутри абзаца (К/к — явно: флаг i в JS не всегда складывает кириллицу) */
     paras = paras.map(function (p) {
       return p
+        .replace(/\s*[Кк]онтекст\s*:\s*[\s\S]*?(?=\n\n|$)/g, ' ')
+        .replace(/\s*[Кк]лючевые\s+акценты\s*:\s*[\s\S]*?(?=\n\n|$)/g, ' ')
         .replace(/\s*[Кк]онтекст\s*:\s*[^.·\n]+(?:·|•)\s*[^.·\n]*\.?/g, ' ')
         .replace(/\s*[Кк]лючевые\s+акценты\s*:\s*[^\n.]+[.!?]?/g, ' ')
         .replace(/\s*[—–-]\s*Место\s+для\s+уточняющего[^.!?]*[.!?]?/gi, '')
@@ -1775,16 +1840,6 @@
     out = capitalizeFirstPara(out);
     return out;
   }
-
-  /* Только мягкие связки между серединой абзацев — не перед приветствием и не в начале поста */
-  var BRIDGE_LINES = [
-    'Дальше — по сути.',
-    'Если коротко.',
-    'Вот что важно.',
-    'По факту.',
-    'Без лишних слов.',
-    'Что из этого следует.'
-  ];
 
   function pickUnusedFromPool(pool, ctx, usedMap, seed) {
     if (!pool || !pool.length) return '';
@@ -1805,87 +1860,16 @@
     return fb;
   }
 
+  /* Связки между блоками отключены — лишние абзацы (лаконичный промпт). */
   function insertBridges(parts, seed) {
-    if (!parts || parts.length < 3) return parts;
-    var body = parts.slice(0, -1);
-    var cta = parts[parts.length - 1];
-    var out = [body[0]];
-    for (var i = 1; i < body.length; i++) {
-      /* Связки только перед 3-м смысловым блоком и дальше — не ломаем первый абзац и вход в текст */
-      if (i >= 2 && ((seed + i * 11) % 10) < 3) out.push(pick(BRIDGE_LINES));
-      out.push(body[i]);
-      seed += 5;
-    }
-    out.push(cta);
-    return out;
+    return parts;
   }
 
-  /* Минимальная длина поста (с пробелами) и мягкий верхний ориентир */
-  var POST_MIN_CHARS = 1000;
-  var POST_SOFT_MAX_CHARS = 1520;
-
-  /**
-   * Дополняет текст, избегая повторов абзацев (usedMap). Минимум ~1000 знаков.
-   */
+  /** Лимит абзацев и дедуп в polishText(); символы до 1000+ больше не накручиваем. */
   function ensurePostLength(text, ctx, salt, usedMap) {
-    text = polishText((text || '').trim());
-    usedMap = usedMap || usedMapFromText(text);
-    var table = segTable(ctx.postType === 'informational' ? 'expert' : (ctx.postType === 'promo' ? 'selling' : ctx.postType));
-    var keys = ['ben', 'val', 'insight', 'trust', 'story', 'interest', 'desire', 'sol', 'pain', 'help', 'truth', 'myth', 'detail', 'for', 'trustline', 'scene', 'feel'];
-    var n = ((salt || 0) * 31 + text.length) % 10007;
-    var safety = 0;
-    function absorbParagraphs(s) {
-      String(s).split('\n\n').forEach(function (p) {
-        var k = normalizeForDedupe(p).slice(0, 140);
-        if (k.length > 18) usedMap[k] = 1;
-      });
-    }
-    absorbParagraphs(text);
-    function nextPara() {
-      for (var attempt = 0; attempt < 28; attempt++) {
-        var ki = keys[(n + attempt) % keys.length];
-        var pool = table[ki] || SEG.selling[ki];
-        if (!pool || !pool.length) continue;
-        var tpl = pool[(n + attempt * 5 + (salt || 0)) % pool.length];
-        var p = fill(tpl, ctx).trim();
-        if (p.length < 22) continue;
-        var key = normalizeForDedupe(p).slice(0, 140);
-        if (usedMap[key] && attempt < 22) continue;
-        usedMap[key] = 1;
-        n += attempt + 13;
-        return p;
-      }
-      return '';
-    }
-    while (text.length < POST_MIN_CHARS && safety < 55) {
-      safety++;
-      var p = nextPara();
-      if (!p) break;
-      text = text + (text ? '\n\n' : '') + p;
-    }
-    safety = 0;
-    while (text.length < POST_MIN_CHARS + 180 && text.length < POST_SOFT_MAX_CHARS - 80 && safety < 14) {
-      safety++;
-      var q = nextPara();
-      if (!q || text.length + q.length + 2 > POST_SOFT_MAX_CHARS + 120) break;
-      text = text + '\n\n' + q;
-    }
-    if (text.length > POST_SOFT_MAX_CHARS + 350) {
-      var parts = text.split('\n\n');
-      while (parts.join('\n\n').length > POST_SOFT_MAX_CHARS + 80 && parts.length > 5) parts.pop();
-      text = parts.join('\n\n');
-      if (text.length < POST_MIN_CHARS) {
-        safety = 0;
-        while (text.length < POST_MIN_CHARS && safety < 35) {
-          safety++;
-          var r = nextPara();
-          if (!r) break;
-          text = text + '\n\n' + r;
-        }
-      }
-    }
-    return polishText(text);
+    return polishText((text || '').trim());
   }
+
 
   /** Промпт по типу поста: информационный → пример; вовлекающий → вопрос; продающий → мягкий путь к решению. */
   function applyPostTypeAccents(parts, ctx, usedMap, seed) {
@@ -1919,17 +1903,17 @@
     parts.push(pickUnusedFromPool(CTA_POOL, ctx, used, rnd));
     parts = insertBridges(parts, rnd + (seedOffset || 0) * 13);
     var body = parts.join('\n\n');
-    if (ctx.extra) body += '\n\nP.S. ' + ctx.extra + emojiFor(ctx, 0);
+    if (ctx.extra) body += ' P.S. ' + ctx.extra + emojiFor(ctx, 0);
     body = applyFormat(body, ctx);
     var gIdx = Math.abs(((seedOffset || 0) * 59 + rnd + body.length) % GREETING_POOL.length);
-    body = fill(GREETING_POOL[gIdx], ctx).trim() + '\n\n' + body;
+    body = fill(GREETING_POOL[gIdx], ctx).trim() + ' ' + body;
     return ensurePostLength(body, ctx, (seedOffset || 0) * 97 + flow.length, used);
   }
 
   function applyFormat(text, ctx) {
     var f = ctx.format;
     if (f === 'list') {
-      return text.split('\n\n').map(function (p, i) { return (i + 1) + ') ' + p.replace(/\n/g, ' '); }).join('\n');
+      return text.split('\n\n').map(function (p, i) { return (i + 1) + ') ' + p.replace(/\n/g, ' '); }).join(' ');
     }
     if (f === 'short' || ctx.length === 'short') {
       var arr = text.split('\n\n');
@@ -1951,18 +1935,18 @@
     if (mode === 'offer' || ctx.tog.offer || ctx.chk.offer) lines.push(pick(TONE_MODIFIERS.offer));
     if (mode === 'alive' || ctx.tog.alive || ctx.chk.creative) lines.push(pick(TONE_MODIFIERS.alive));
     if (mode === 'soft' || ctx.tog.soft || ctx.chk.softcta) lines.push(pick(TONE_MODIFIERS.soft));
-    if (ctx.chk.benefit) text = text + '\n\n' + fill(pick(SEG.selling.ben), ctx);
-    if (ctx.chk.sales) text = text + '\n\n' + fill(pick(SEG.selling.desire), ctx);
+    if (ctx.chk.benefit) text = text + ' ' + fill(pick(SEG.selling.ben), ctx);
+    if (ctx.chk.sales) text = text + ' ' + fill(pick(SEG.selling.desire), ctx);
     /* Вовлечение и доверие — в конец, чтобы начало поста сразу было живым, без «надстроек» */
-    if (ctx.chk.eng) text = text + '\n\n' + fill(pick(SEG.selling.invite), ctx);
-    if (ctx.chk.trust) text = text + '\n\n' + fill(pick(SEG.selling.trust), ctx);
+    if (ctx.chk.eng) text = text + ' ' + fill(pick(SEG.selling.invite), ctx);
+    if (ctx.chk.trust) text = text + ' ' + fill(pick(SEG.selling.trust), ctx);
     /* Пометки тона — в конец, не перед приветствием и первым абзацем */
-    if (lines.length) text = text + '\n\n' + lines.join(' · ');
+    if (lines.length) text = text + ' ' + lines.join(' · ');
     return text;
   }
 
   function stripEmoji(s) {
-    return s.replace(/[\u{1F300}-\u{1F9FF}]|[\u2600-\u26FF]|[\u2700-\u27BF]/gu, '').replace(/\s{2,}/g, ' ').trim();
+    return String(s == null ? '' : s).replace(/[\u{1F300}-\u{1F9FF}]|[\u2600-\u26FF]|[\u2700-\u27BF]/gu, '').replace(/\s{2,}/g, ' ').trim();
   }
 
   function makeHeadlines(ctx, n) {
@@ -2021,20 +2005,28 @@
   }
 
   function shortenText(s) {
-    var p = s.split('\n\n');
-    return p.slice(0, Math.max(2, Math.floor(p.length / 2))).join('\n\n');
+    var t = String(s || '').trim();
+    if (!t) return t;
+    var paras = t.split(/\n\s*\n+/).map(function (p) { return p.trim(); }).filter(Boolean);
+    if (paras.length >= 2) {
+      return paras.slice(0, Math.max(2, Math.floor(paras.length / 2))).join(' ').replace(/\s{2,}/g, ' ').trim();
+    }
+    var target = Math.max(120, Math.floor(t.length * 0.48));
+    if (t.length <= target + 24) return t;
+    var cut = t.slice(0, target);
+    var lastSp = cut.lastIndexOf(' ');
+    if (lastSp > 60) cut = cut.slice(0, lastSp);
+    return cut.trim() + '…';
   }
 
   function lengthenText(s, ctx) {
-    return s + '\n\n' + fill(pick(SEG.selling.val), ctx) + '\n\n' + fill(pick(SEG.selling.insight), ctx);
+    return s + ' ' + fill(pick(SEG.selling.val), ctx) + ' ' + fill(pick(SEG.selling.insight), ctx);
   }
 
   /** Единая доводка после сборки: модификаторы → вычитка → длина (используется и в кнопках). */
   function finalizeGeneratedBody(ctx, raw, mode, salt) {
     var t = applyModifiers(raw, ctx, mode);
-    t = polishText(t);
-    t = ensurePostLength(t, ctx, salt, usedMapFromText(t));
-    return t;
+    return polishText(t);
   }
 
   function generatePack(ctx, opts) {
@@ -2207,7 +2199,6 @@
     ];
     var extra =
       block('Призыв к действию (основной)', fill(pick(CTA_POOL), pack.ctx)) +
-      block('Вариант с абзацами', pack.paragraphs) +
       block('С эмодзи', pack.withEmoji) +
       block('3 цепляющих заголовка', pack.altTitles.join('\n')) +
       block('3 варианта первого абзаца', pack.openers.join('\n\n')) +
@@ -2510,7 +2501,7 @@
     });
     document.getElementById('btnShorter').addEventListener('click', function () {
       if (!lastPack) return;
-      lastPack.main = shortenText(lastPack.main);
+      lastPack.main = polishText(shortenText(lastPack.main));
       renderResult(lastPack, false);
       toast('Текст короче');
     });
@@ -2522,19 +2513,19 @@
     });
     document.getElementById('btnRicher').addEventListener('click', function () {
       if (!lastPack) return;
-      lastPack.main = applyModifiers(lastPack.main, lastPack.ctx, 'premium');
+      lastPack.main = polishText(applyModifiers(lastPack.main, lastPack.ctx, 'premium'));
       renderResult(lastPack, false);
       toast('Тон дороже');
     });
     document.getElementById('btnSofter').addEventListener('click', function () {
       if (!lastPack) return;
-      lastPack.main = applyModifiers(lastPack.main, lastPack.ctx, 'soft');
+      lastPack.main = polishText(applyModifiers(lastPack.main, lastPack.ctx, 'soft'));
       renderResult(lastPack, false);
       toast('Тон мягче');
     });
     document.getElementById('btnLivelier').addEventListener('click', function () {
       if (!lastPack) return;
-      lastPack.main = applyModifiers(lastPack.main, lastPack.ctx, 'alive');
+      lastPack.main = polishText(applyModifiers(lastPack.main, lastPack.ctx, 'alive'));
       renderResult(lastPack, false);
       toast('Текст живее');
     });
