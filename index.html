@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="PostCraft — генератор постов для SMM: черновики под нишу, простой язык, без штампов. Работает в браузере, светлая и тёмная тема." />
   <title>Генератор постов для SMM — готовый контент под любую нишу</title>
   <!--
     ═══════════════════════════════════════════════════════════════════════════
@@ -59,6 +60,16 @@
     }
     *, *::before, *::after { box-sizing: border-box; }
     html { scroll-behavior: smooth; }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .reveal, .result-wrap.visible, .toast { animation: none !important; }
+      .card, .btn, .chip, .tab, .theme-btn { transition: none !important; }
+    }
+    :focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+    .btn:focus-visible, .chip:focus-visible, .tab:focus-visible, .theme-btn:focus-visible { outline-offset: 2px; }
     body {
       margin: 0;
       font-family: var(--font);
@@ -302,9 +313,18 @@
     .quality-note ul { margin: 0; padding-left: 1.25em; }
     .quality-note li { margin-bottom: 8px; }
     .quality-note li:last-child { margin-bottom: 0; }
+
+    .skip-link {
+      position: absolute; left: -9999px; top: 0; z-index: 200;
+      padding: 10px 16px; background: var(--accent); color: var(--btn-text);
+      border-radius: var(--radius-sm); font-weight: 600; font-size: 0.9rem;
+      text-decoration: none;
+    }
+    .skip-link:focus { left: 12px; top: 12px; outline: none; box-shadow: var(--shadow); }
   </style>
 </head>
 <body>
+  <a class="skip-link" href="#generator">Перейти к генератору</a>
   <header class="topbar">
     <div class="wrap topbar-inner">
       <div class="logo">PostCraft · генератор для SMM</div>
@@ -435,6 +455,7 @@
             <li>Черновики держим <strong>простыми и понятными</strong>: без странных шаблонных слов, пустых маркетинговых клише и тяжёлого канцелярита — так, чтобы с первого прочтения было ясно, о чём пост.</li>
             <li>Удобно читать с телефона: <strong>короткие предложения</strong>, нормальные связки между мыслями, без лишней воды и «умных» слов ради вида.</li>
             <li>Генератор даёт основу — <strong>прогоните глазами и подправьте под ваш голос</strong>; включите «проще и человечнее» в переключателях или в чекбоксах, если нужен ещё более разговорный тон.</li>
+            <li>Система сама <strong>режет повторы абзацев</strong>, подмечает типовые штампы и чередует формулировки — текст получается ровнее и спокойнее для ленты.</li>
           </ul>
         </div>
 
@@ -586,6 +607,8 @@
    * 4) composeVariant() случайно (с «сидом») выбирает фразы из пулов и склеивает текст.
    * 5) applyModifiers / applyFormat доформатировывают длину, списки, усиления.
    * 6) generatePack() собирает основной пост + альтернативы, сторис, хэштеги и т.д.
+   * 7) polishText() — снятие дублей абзацев + фильтр типовых штампов; pickUnusedFromPool() и usedMap
+   *    снижают повтор фраз внутри одного текста; insertBridges() добавляет короткие живые связки.
    * Плейсхолдеры в шаблонах: {{niche}}, {{product}}, {{audience}}, {{pain}}, {{usp}}, {{goal}}, {{cta}}, {{keywords}}
    * Объём поста: ensurePostLength() доводит основной текст до ≥1000 знаков (цель ~1000–1500).
    *
@@ -1386,36 +1409,169 @@
     return SEG[type] || SEG.selling;
   }
 
+  /* ---------- Качество текста: анти-повтор, штампы, связки (апгрейд до «9/10») ---------- */
+
+  function normalizeForDedupe(s) {
+    return String(s || '').replace(/\s+/g, ' ').trim().toLowerCase().replace(/[«»"'…]/g, '');
+  }
+
+  function usedMapFromText(text) {
+    var u = {};
+    String(text || '').split(/\n\n').forEach(function (p) {
+      var k = normalizeForDedupe(p).slice(0, 140);
+      if (k.length > 18) u[k] = 1;
+    });
+    return u;
+  }
+
+  function isNearDuplicate(a, b) {
+    if (!a || !b) return false;
+    if (a === b) return true;
+    if (a.length < 28 || b.length < 28) return false;
+    if (a.indexOf(b) !== -1 || b.indexOf(a) !== -1) return true;
+    var wa = a.split(' ');
+    var wb = b.split(' ');
+    if (wa.length < 7 || wb.length < 7) return false;
+    var setb = {};
+    for (var i = 0; i < wb.length; i++) setb[wb[i]] = 1;
+    var inter = 0;
+    for (var j = 0; j < wa.length; j++) if (setb[wa[j]]) inter++;
+    var uni = wa.length + wb.length - inter;
+    return uni > 0 && inter / uni > 0.68;
+  }
+
+  function dedupeParagraphs(text) {
+    var paras = String(text || '').split(/\n\n');
+    var out = [];
+    for (var i = 0; i < paras.length; i++) {
+      var p = paras[i].trim();
+      if (!p) continue;
+      var np = normalizeForDedupe(p);
+      var dup = false;
+      for (var j = 0; j < out.length; j++) {
+        if (isNearDuplicate(np, normalizeForDedupe(out[j]))) { dup = true; break; }
+      }
+      if (!dup) out.push(p);
+    }
+    return out.join('\n\n');
+  }
+
+  var CLICHE_REPLACEMENTS = [
+    [/мы\s+рады\s+(вам\s+)?сообщить/gi, 'коротко'],
+    [/предлагаем\s+вашему\s+вниманию/gi, 'ниже по делу'],
+    [/уникальн(ое|ая|ый|ые)\s+предложени[ея]/gi, 'конкретное предложение'],
+    [/лучшее\s+решени[ея]\s+для\s+всех/gi, 'рабочий вариант под ваш запрос'],
+    [/не\s+упустите\s+возможность/gi, 'если откликается — напишите'],
+    [/только\s+сегодня(!|\.)/gi, 'сейчас'],
+    [/инновационн(ый|ая|ое)\s+/gi, ''],
+    [/самый\s+лучший/gi, 'сильный'],
+    [/гарантируем\s+100%/gi, 'даём понятные условия'],
+    [/комплексный\s+подход\s+к\s+каждому/gi, 'разбираем по шагам'],
+    [/в\s+современном\s+мире/gi, 'на практике'],
+    [/на\s+высшем\s+уровне/gi, 'аккуратно и по стандарту']
+  ];
+
+  function sanitizeCliches(text) {
+    var t = String(text || '');
+    for (var i = 0; i < CLICHE_REPLACEMENTS.length; i++) {
+      t = t.replace(CLICHE_REPLACEMENTS[i][0], CLICHE_REPLACEMENTS[i][1]);
+    }
+    return t.replace(/\n{3,}/g, '\n\n').replace(/[ \t]{2,}/g, ' ').replace(/\s+([.,;:!?])/g, '$1').trim();
+  }
+
+  function polishText(text) {
+    return sanitizeCliches(dedupeParagraphs(text));
+  }
+
+  var BRIDGE_LINES = [
+    'Дальше — по сути.',
+    'Если коротко.',
+    'Вот что важно.',
+    'К делу.',
+    'Смотрите.',
+    'По факту.',
+    'Без лишних слов.',
+    'Что из этого следует.'
+  ];
+
+  function pickUnusedFromPool(pool, ctx, usedMap, seed) {
+    if (!pool || !pool.length) return '';
+    var n = pool.length;
+    var start = Math.abs(seed) % n;
+    for (var t = 0; t < n; t++) {
+      var idx = (start + t) % n;
+      var txt = fill(pool[idx], ctx).trim();
+      var key = normalizeForDedupe(txt).slice(0, 140);
+      if (key.length < 12) continue;
+      if (!usedMap[key]) {
+        usedMap[key] = 1;
+        return txt;
+      }
+    }
+    var fb = fill(pool[start], ctx).trim();
+    usedMap[normalizeForDedupe(fb).slice(0, 140)] = 1;
+    return fb;
+  }
+
+  function insertBridges(parts, seed) {
+    if (!parts || parts.length < 3) return parts;
+    var body = parts.slice(0, -1);
+    var cta = parts[parts.length - 1];
+    var out = [body[0]];
+    for (var i = 1; i < body.length; i++) {
+      if (((seed + i * 11) % 10) < 4) out.push(pick(BRIDGE_LINES));
+      out.push(body[i]);
+      seed += 5;
+    }
+    out.push(cta);
+    return out;
+  }
+
   /* Минимальная длина поста (с пробелами) и мягкий верхний ориентир */
   var POST_MIN_CHARS = 1000;
   var POST_SOFT_MAX_CHARS = 1520;
 
   /**
-   * Дополняет текст абзацами из пулов SEG, пока не достигнут минимум ~1000 знаков.
-   * До SOFT_MAX наращивает ещё 1–2 блока для «плотного» чтения в коридоре 1000–1500.
+   * Дополняет текст, избегая повторов абзацев (usedMap). Минимум ~1000 знаков.
    */
-  function ensurePostLength(text, ctx, salt) {
-    text = (text || '').trim();
+  function ensurePostLength(text, ctx, salt, usedMap) {
+    text = polishText((text || '').trim());
+    usedMap = usedMap || usedMapFromText(text);
     var table = segTable(ctx.postType === 'informational' ? 'expert' : (ctx.postType === 'promo' ? 'selling' : ctx.postType));
     var keys = ['ben', 'val', 'insight', 'trust', 'story', 'interest', 'desire', 'sol', 'pain', 'help', 'truth', 'myth', 'detail', 'for', 'trustline', 'scene', 'feel'];
     var n = ((salt || 0) * 31 + text.length) % 10007;
     var safety = 0;
-    function nextPara() {
-      var k = keys[n++ % keys.length];
-      var pool = table[k] || SEG.selling[k];
-      if (!pool || !pool.length) return '';
-      var tpl = pool[n % pool.length];
-      n += 17;
-      return fill(tpl, ctx).trim();
+    function absorbParagraphs(s) {
+      String(s).split('\n\n').forEach(function (p) {
+        var k = normalizeForDedupe(p).slice(0, 140);
+        if (k.length > 18) usedMap[k] = 1;
+      });
     }
-    while (text.length < POST_MIN_CHARS && safety < 50) {
+    absorbParagraphs(text);
+    function nextPara() {
+      for (var attempt = 0; attempt < 28; attempt++) {
+        var ki = keys[(n + attempt) % keys.length];
+        var pool = table[ki] || SEG.selling[ki];
+        if (!pool || !pool.length) continue;
+        var tpl = pool[(n + attempt * 5 + (salt || 0)) % pool.length];
+        var p = fill(tpl, ctx).trim();
+        if (p.length < 22) continue;
+        var key = normalizeForDedupe(p).slice(0, 140);
+        if (usedMap[key] && attempt < 22) continue;
+        usedMap[key] = 1;
+        n += attempt + 13;
+        return p;
+      }
+      return '';
+    }
+    while (text.length < POST_MIN_CHARS && safety < 55) {
       safety++;
       var p = nextPara();
-      if (p.length < 20) continue;
+      if (!p) break;
       text = text + (text ? '\n\n' : '') + p;
     }
     safety = 0;
-    while (text.length < POST_MIN_CHARS + 180 && text.length < POST_SOFT_MAX_CHARS - 80 && safety < 12) {
+    while (text.length < POST_MIN_CHARS + 180 && text.length < POST_SOFT_MAX_CHARS - 80 && safety < 14) {
       safety++;
       var q = nextPara();
       if (!q || text.length + q.length + 2 > POST_SOFT_MAX_CHARS + 120) break;
@@ -1427,35 +1583,35 @@
       text = parts.join('\n\n');
       if (text.length < POST_MIN_CHARS) {
         safety = 0;
-        while (text.length < POST_MIN_CHARS && safety < 30) {
+        while (text.length < POST_MIN_CHARS && safety < 35) {
           safety++;
           var r = nextPara();
-          if (r.length < 20) continue;
+          if (!r) break;
           text = text + '\n\n' + r;
         }
       }
     }
-    return text;
+    return polishText(text);
   }
 
   function composeVariant(ctx, seedOffset) {
     var table = segTable(ctx.postType === 'informational' ? 'expert' : (ctx.postType === 'promo' ? 'selling' : ctx.postType));
     var flow = flowFor(ctx);
+    var used = {};
+    var rnd = (Date.now() % 997) + (seedOffset || 0) * 97;
     var parts = [];
-    var rnd = (Date.now() % 997) + seedOffset * 13;
     for (var i = 0; i < flow.length; i++) {
-      var key = flow[i];
-      var pool = table[key] || SEG.selling[key] || SEG.selling.hook;
-      var tpl = pool[(rnd + i * 17) % pool.length];
-      parts.push(fill(tpl, ctx));
-      rnd += 31;
+      var segKey = flow[i];
+      var pool = table[segKey] || SEG.selling[segKey] || SEG.selling.hook;
+      parts.push(pickUnusedFromPool(pool, ctx, used, rnd + i * 19));
+      rnd += 41;
     }
-    var ctaLine = fill(pick(CTA_POOL), ctx);
-    parts.push(ctaLine);
+    parts.push(pickUnusedFromPool(CTA_POOL, ctx, used, rnd));
+    parts = insertBridges(parts, rnd + (seedOffset || 0) * 13);
     var body = parts.join('\n\n');
     if (ctx.extra) body += '\n\nP.S. ' + ctx.extra + emojiFor(ctx, 0);
     body = applyFormat(body, ctx);
-    return ensurePostLength(body, ctx, (seedOffset || 0) * 97 + flow.length);
+    return ensurePostLength(body, ctx, (seedOffset || 0) * 97 + flow.length, used);
   }
 
   function applyFormat(text, ctx) {
@@ -1496,14 +1652,30 @@
   }
 
   function makeHeadlines(ctx, n) {
-    var out = [];
-    for (var i = 0; i < n; i++) out.push(fill(HEADLINE_POOL[(i * 7) % HEADLINE_POOL.length], ctx));
-    return out;
+    return pickMany(HEADLINE_POOL.slice(), n).map(function (h) { return fill(h, ctx); });
   }
 
-  function makeOpeners(ctx, n) {
+  function makeOpeners(ctx, n, avoidText) {
     var t = segTable(ctx.postType === 'informational' ? 'expert' : ctx.postType);
-    return pickMany(t.hook, Math.min(n, t.hook.length)).map(function (x) { return fill(x, ctx); });
+    var hooks = t.hook.slice();
+    var out = [];
+    var tries = 0;
+    var avoidNorm = avoidText ? normalizeForDedupe(String(avoidText).slice(0, 280)) : '';
+    while (out.length < n && tries < 55) {
+      tries++;
+      var h = hooks[Math.floor(Math.random() * hooks.length)];
+      var filled = fill(h, ctx);
+      var fd = normalizeForDedupe(filled).slice(0, 110);
+      if (avoidNorm.length > 35 && (avoidNorm.indexOf(fd.slice(0, 36)) !== -1 || fd.indexOf(avoidNorm.slice(0, 36)) !== -1)) continue;
+      var dupIn = false;
+      for (var i = 0; i < out.length; i++) {
+        if (isNearDuplicate(fd, normalizeForDedupe(out[i]))) { dupIn = true; break; }
+      }
+      if (dupIn) continue;
+      out.push(filled);
+    }
+    while (out.length < n) out.push(fill(pick(t.hook), ctx));
+    return out;
   }
 
   function makeAltCta(ctx, n) {
@@ -1543,18 +1715,21 @@
     return s + '\n\n' + fill(pick(SEG.selling.val), ctx) + '\n\n' + fill(pick(SEG.selling.insight), ctx);
   }
 
+  /** Единая доводка после сборки: модификаторы → вычитка → длина (используется и в кнопках). */
+  function finalizeGeneratedBody(ctx, raw, mode, salt) {
+    var t = applyModifiers(raw, ctx, mode);
+    t = polishText(t);
+    t = ensurePostLength(t, ctx, salt, usedMapFromText(t));
+    return t;
+  }
+
   function generatePack(ctx, opts) {
     opts = opts || {};
-    var main = composeVariant(ctx, opts.seed || 0);
-    main = applyModifiers(main, ctx, opts.mode);
-    main = ensurePostLength(main, ctx, 11);
+    var main = finalizeGeneratedBody(ctx, composeVariant(ctx, opts.seed || 0), opts.mode, 11);
     if (resolveEmoji(ctx)) main = main.replace(/([.!?])\s/g, '$1' + emojiFor(ctx, 1) + ' ');
-    var v2 = applyModifiers(composeVariant(ctx, 1), ctx, opts.mode);
-    v2 = ensurePostLength(v2, ctx, 22);
-    var v3 = applyModifiers(composeVariant(ctx, 2), ctx, opts.mode);
-    v3 = ensurePostLength(v3, ctx, 33);
-    var premium = applyModifiers(composeVariant(ctx, 3), ctx, 'premium');
-    premium = ensurePostLength(premium, ctx, 44);
+    var v2 = finalizeGeneratedBody(ctx, composeVariant(ctx, 1), opts.mode, 22);
+    var v3 = finalizeGeneratedBody(ctx, composeVariant(ctx, 2), opts.mode, 33);
+    var premium = finalizeGeneratedBody(ctx, composeVariant(ctx, 3), 'premium', 44);
     var short = shortenText(main);
     var noEmoji = stripEmoji(main);
     var platformNote = PLATFORM_HINTS[ctx.platform] || PLATFORM_HINTS.universal;
@@ -1569,7 +1744,7 @@
       paragraphs: main,
       withEmoji: resolveEmoji(ctx) ? main : main + emojiFor(ctx, 0),
       altTitles: makeHeadlines(ctx, 3),
-      openers: makeOpeners(ctx, 3),
+      openers: makeOpeners(ctx, 3, main),
       altCtas: makeAltCta(ctx, 3),
       stories: makeStories(ctx),
       hashtags: makeHashtags(ctx),
@@ -1964,8 +2139,8 @@
     document.getElementById('btnMore2').addEventListener('click', function () {
       if (!lastPack) { runGenerate(true); return; }
       var ctx = readCtx();
-      lastPack.v2 = applyModifiers(composeVariant(ctx, 11), ctx, {});
-      lastPack.v3 = applyModifiers(composeVariant(ctx, 17), ctx, {});
+      lastPack.v2 = finalizeGeneratedBody(ctx, composeVariant(ctx, 11), undefined, 62);
+      lastPack.v3 = finalizeGeneratedBody(ctx, composeVariant(ctx, 17), undefined, 73);
       renderResult(lastPack, true);
       toast('Добавлены новые варианты');
     });
@@ -1977,7 +2152,7 @@
     });
     document.getElementById('btnLonger').addEventListener('click', function () {
       if (!lastPack) return;
-      lastPack.main = lengthenText(lastPack.main, lastPack.ctx);
+      lastPack.main = polishText(lengthenText(lastPack.main, lastPack.ctx));
       renderResult(lastPack, false);
       toast('Текст длиннее');
     });
